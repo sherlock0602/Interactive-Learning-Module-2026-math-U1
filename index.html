@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小數互動教學系統 </title>
+    <style>
+        :root {
+            --primary: #2b6cb0; --bg: #f7fafc; --card: #ffffff;
+            --c-1: #4299e1; --c-01: #48bb78; --c-001: #ed8936; --c-0001: #e53e3e;
+            --highlight: #fef08a; --active-digit: #e53e3e;
+        }
+        body { font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; background-color: var(--bg); margin: 0; padding: 20px; color: #2d3748; }
+        h1 { text-align: center; color: #1a202c; }
+        .nav-tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab-btn { padding: 10px 20px; font-size: 16px; border: none; background-color: #cbd5e0; cursor: pointer; border-radius: 8px; font-weight: bold; transition: 0.2s; }
+        .tab-btn.active { background-color: var(--primary); color: white; }
+        .section-content { display: none; background: var(--card); padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 1050px; margin: 0 auto; position: relative; min-height: 500px;}
+        .section-content.active { display: block; }
+        .controls { display: flex; justify-content: center; align-items: center; gap: 10px; margin: 15px 0; flex-wrap: wrap; background: #edf2f7; padding: 15px; border-radius: 8px;}
+        .btn { padding: 8px 16px; font-size: 16px; border: none; border-radius: 6px; cursor: pointer; color: white; font-weight:bold; }
+        .btn-blue { background-color: #4299e1; } .btn-green { background-color: #48bb78; } .btn-red { background-color: #f56565; } 
+        .btn-next { background-color: #ed8936; font-size: 22px; padding: 10px 20px; margin-top: 15px; width: 100%; border: 2px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.2); border-radius: 8px; cursor: pointer;} 
+        .btn-next:hover { background-color: #dd6b20; }
+        
+        /* 1-1 */
+        .pv-table { width: 100%; table-layout: fixed; border-collapse: collapse; text-align: center; margin-bottom: 10px; }
+        .pv-table th, .pv-table td { border: 2px solid #cbd5e0; padding: 10px; font-size: 18px; width: 25%; }
+        #svg-container { width: 100%; background: #fafafa; border: 2px dashed #cbd5e0; border-radius: 8px; padding: 10px 0; display: flex; justify-content: center; }
+        svg { width: 100%; height: auto; display: block; }
+        
+        /* 1-2 & 共用 */
+        .bact-grid { display: grid; grid-template-columns: 1fr 80px 1fr; gap: 10px; margin-top: 20px; align-items: center; position: relative;}
+        .bact-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; text-align: center; background: #fff; position: relative;}
+        .bact-img { width: 100%; height: 200px; object-fit: contain; border-radius: 8px; background: #fff; margin-bottom: 10px; border: 1px solid #cbd5e0;}
+        .digit-span { display: inline-block; padding: 2px 4px; border-radius: 4px; transition: 0.3s; }
+        .digit-active { background-color: var(--highlight); color: var(--active-digit); transform: scale(1.4); font-weight: bold; }
+        #compare-symbol { font-size: 80px; font-weight: bold; color: var(--active-digit); text-align: center; }
+        .wiki-link { font-size: 16px; color: #3182ce; text-decoration: none; margin-left: 8px; font-weight: normal; }
+        .wiki-link:hover { text-decoration: underline; }
+        
+        .floating-step { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: white; padding: 25px 40px; font-size: 28px; border-radius: 12px; z-index: 100; display: none; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); white-space: nowrap; line-height: 1.6;}
+        
+        /* 1-3 專用：修正固定在右側 */
+        .floating-step-right { position: absolute; top: 50%; right: 5%; transform: translateY(-50%); background: rgba(0,0,0,0.85); color: white; padding: 20px 30px; font-size: 26px; border-radius: 12px; z-index: 100; display: none; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); line-height: 1.6; min-width: 250px;}
+
+        /* 1-3 絕對對齊的 Flex 網格 */
+        .math-grid { display: flex; justify-content: flex-start; padding-left: 10%; gap: 40px; align-items: center; margin-top: 20px;}
+        .vertical-math { background: #f7fafc; padding: 30px 40px; border-radius: 8px; display: inline-block; border: 2px solid #e2e8f0; }
+        .math-row { display: flex; justify-content: flex-end; align-items: center; }
+        .math-col { width: 55px; height: 65px; line-height: 65px; text-align: center; font-family: monospace; font-size: 60px; transition: 0.3s; border-radius: 4px; }
+        .math-col.active { background-color: var(--highlight); color: var(--active-digit); transform: scale(1.15); font-weight: bold; }
+        .math-line { border-bottom: 5px solid #1a202c; width: 100%; margin: 15px 0; }
+        .step-box { background: #ebf8ff; border-left: 4px solid var(--primary); padding: 20px; border-radius: 8px; font-size: 20px; line-height: 1.6; min-width: 320px; align-self: stretch;}
+        
+        /* 1-4 數線詳細教學 */
+        .q-card { background: #2b6cb0; color: white; font-size: 22px; padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 30px; }
+        .number-line { position: relative; height: 120px; margin: 80px 20px 40px 20px; border-bottom: 4px solid #4a5568; }
+        .tick { position: absolute; bottom: 0; width: 2px; height: 20px; background: #4a5568; transform: translateX(-50%); }
+        .tick-main { height: 35px; width: 4px; }
+        .tick-label { position: absolute; top: 45px; transform: translateX(-50%); font-weight: bold; font-size: 18px; white-space: nowrap; color: #4a5568; }
+        .tick-label-main { font-size: 24px; color: #1a202c; }
+        .ball { width: 30px; height: 30px; background: var(--primary); border-radius: 50%; position: absolute; bottom: 12px; transform: translateX(-50%); transition: left 1.5s ease-in-out; border: 3px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.4); z-index: 10; }
+        .ball-exact-label { position: absolute; top: -35px; left: 50%; transform: translateX(-50%); background: var(--primary); color: white; padding: 2px 8px; border-radius: 6px; font-size: 16px; font-weight: bold; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.3);}
+        .red-line { position: absolute; width: 4px; height: 80px; background: red; bottom: 0; left: 50%; transform: translateX(-50%); z-index: 5; box-shadow: 0 0 10px rgba(255,0,0,0.8); display: none;}
+        .red-line-label { position: absolute; bottom: 85px; left: 50%; transform: translateX(-50%); background: red; color: white; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 20px; white-space: nowrap; display: none;}
+        
+        select, input { font-size: 20px; padding: 5px; border-radius: 4px; border: 1px solid #ccc; font-weight: bold; text-align: center;}
+    </style>
+</head>
+<body>
+
+    <h1>小數互動教學系統</h1>
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab(0)">1-1 位值立體圖形</button>
+        <button class="tab-btn" onclick="switchTab(1)">1-2 小數比大小</button>
+        <button class="tab-btn" onclick="switchTab(2)">1-3 直式加法對齊</button>
+        <button class="tab-btn" onclick="switchTab(3)">1-4 四捨五入數線</button>
+    </div>
+
+    <!-- 1-1 -->
+    <div class="section-content active">
+        <h2>1-1 具體量感：區塊劃分與網格切割線</h2>
+        <table class="pv-table">
+            <tr>
+                <th style="color:var(--c-1)">個位 (1)</th>
+                <th style="color:var(--c-01)">十分位 (0.1)</th>
+                <th style="color:var(--c-001)">百分位 (0.01)</th>
+                <th style="color:var(--c-0001)">千分位 (0.001)</th>
+            </tr>
+            <tr>
+                <td id="pv-1">0</td><td id="pv-01">0</td><td id="pv-001">0</td><td id="pv-0001">0</td>
+            </tr>
+            <tr>
+                <td><button class="btn btn-blue" onclick="addPV('1', 1)">+</button> <button class="btn" style="background:#a0aec0" onclick="addPV('1', -1)">-</button></td>
+                <td><button class="btn btn-green" onclick="addPV('01', 1)">+</button> <button class="btn" style="background:#a0aec0" onclick="addPV('01', -1)">-</button></td>
+                <td><button class="btn" style="background:var(--c-001)" onclick="addPV('001', 1)">+</button> <button class="btn" style="background:#a0aec0" onclick="addPV('001', -1)">-</button></td>
+                <td><button class="btn btn-red" onclick="addPV('0001', 1)">+</button> <button class="btn" style="background:#a0aec0" onclick="addPV('0001', -1)">-</button></td>
+            </tr>
+        </table>
+        <div id="svg-container">
+            <svg id="blockSvg" viewBox="0 0 1200 450" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+    </div>
+
+    <!-- 1-2 -->
+    <div class="section-content">
+        <h2>1-2 小數比大小：多樣微小物體與自訂題目</h2>
+        
+        <div class="controls">
+            <button class="btn btn-blue" onclick="generateBact()">隨機產生比較物</button>
+            <div style="border-left: 2px solid #cbd5e0; margin: 0 10px; height: 30px;"></div>
+            <span>自訂左:</span> <input type="number" id="custom-a" step="0.00001" style="width:120px;" placeholder="0.00123">
+            <span>自訂右:</span> <input type="number" id="custom-b" step="0.00001" style="width:120px;" placeholder="0.00125">
+            <button class="btn btn-blue" onclick="setCustomBact()">設定自訂數字</button>
+            <div style="width:100%; text-align:center; margin-top:10px;">
+                <button class="btn btn-green" style="padding:10px 30px; font-size:20px;" id="btn-compare" onclick="startCompare()">開始比較</button>
+            </div>
+        </div>
+        
+        <div id="floating-step-12" class="floating-step">
+            <div id="fs-text-12">準備比較！</div>
+            <button class="btn btn-next" id="btn-next-12" onclick="nextStep12()">下一步 ⏭️</button>
+        </div>
+
+        <div class="bact-grid">
+            <div class="bact-card">
+                <img src="" class="bact-img" id="img-a">
+                <h3 id="name-a"></h3>
+                <div style="font-size: 40px; font-family: monospace;" id="val-a-box"></div>
+            </div>
+            <div id="compare-symbol"></div>
+            <div class="bact-card">
+                <img src="" class="bact-img" id="img-b">
+                <h3 id="name-b"></h3>
+                <div style="font-size: 40px; font-family: monospace;" id="val-b-box"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1-3 -->
+    <div class="section-content">
+        <h2>1-3 直式加法：大字體網格與完整紀錄</h2>
+        <div class="controls">
+            <button class="btn btn-blue" onclick="generateMath()">產生新題目</button>
+            <button class="btn btn-green" style="padding:10px 30px; font-size:20px;" id="btn-math-start" onclick="startMath()">開始計算</button>
+        </div>
+        
+        <!-- 固定在右側的浮動解說框 -->
+        <div id="floating-step-13" class="floating-step-right">
+            <div id="fs-text-13">準備計算！</div>
+            <button class="btn btn-next" id="btn-next-13" onclick="nextStep13()">下一步 ⏭️</button>
+        </div>
+
+        <div class="math-grid">
+            <div class="vertical-math" id="math-display"></div>
+            <div class="step-box" id="math-steps">請點擊上方按鈕開始計算。</div>
+        </div>
+    </div>
+
+    <!-- 1-4 -->
+    <div class="section-content">
+        <div class="q-card">
+            請將 <input type="number" id="user-round-val" value="3.427" step="0.001" style="width:140px;"> 
+            四捨五入取概數至：
+            <select id="round-target" onchange="setupNumberLine()">
+                <option value="0">個位 (整數)</option>
+                <option value="1">第一位 (十分位)</option>
+                <option value="2">第二位 (百分位)</option>
+            </select>
+        </div>
+        
+        <div class="controls">
+            <button class="btn btn-blue" onclick="setupNumberLine()">設定數線</button>
+            <button class="btn btn-green" style="padding:10px 30px; font-size:20px;" onclick="startRounding()">開始判斷</button>
+        </div>
+
+        <!-- 浮動視窗移至上半部避免遮擋數線 -->
+        <div id="floating-step-14" class="floating-step" style="z-index: 200; top: 25%;">
+            <div id="fs-text-14">準備判斷！</div>
+            <button class="btn btn-next" id="btn-next-14" onclick="nextStep14()">下一步 ⏭️</button>
+        </div>
+
+        <div class="number-line" id="n-line"></div>
+    </div>
+
+    <script>
+        function switchTab(index) {
+            document.querySelectorAll('.tab-btn').forEach((btn, i) => btn.classList.toggle('active', i === index));
+            document.querySelectorAll('.section-content').forEach((sec, i) => sec.classList.toggle('active', i === index));
+            if(index === 0) drawTrueScaleSVG();
+        }
+
+        /* ================= 1-1 SVG 繪圖 ================= */
+        let pv = { '1': 0, '01': 0, '001': 0, '0001': 0 };
+        function addPV(key, d) {
+            if (pv[key] + d >= 0 && pv[key] + d <= 9) {
+                pv[key] += d;
+                document.getElementById(`pv-${key}`).innerText = pv[key];
+                drawTrueScaleSVG();
+            }
+        }
+        
+        function drawTrueScaleSVG() {
+            const svg = document.getElementById('blockSvg');
+            let content = '';
+            const getIsoSVG = (x, y, w, h, d, faceC, topC, sideC, hasGrid=false) => {
+                const ox = d * 0.5, oy = d * 0.5;
+                let html = `<g transform="translate(${x}, ${y})">`;
+                html += `<rect x="0" y="0" width="${w}" height="${h}" fill="${faceC}" stroke="#1a202c" stroke-width="1.5"/>`;
+                html += `<path d="M 0 0 L ${ox} ${-oy} L ${w+ox} ${-oy} L ${w} 0 Z" fill="${topC}" stroke="#1a202c" stroke-width="1.5"/>`;
+                html += `<path d="M ${w} 0 L ${w+ox} ${-oy} L ${w+ox} ${h-oy} L ${w} ${h} Z" fill="${sideC}" stroke="#1a202c" stroke-width="1.5"/>`;
+                if(hasGrid) {
+                    for(let i=1; i<10; i++) {
+                        html += `<line x1="${w/10*i}" y1="0" x2="${w/10*i}" y2="${h}" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>`;
+                        if(h > 10) html += `<line x1="0" y1="${h/10*i}" x2="${w}" y2="${h/10*i}" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>`;
+                    }
+                }
+                html += `</g>`;
+                return html;
+            };
+
+            for(let i=0; i<pv['1']; i++) {
+                let row = Math.floor(i / 3); let col = i % 3;
+                content += getIsoSVG(30 + col*85, 70 + row*95, 60, 60, 60, "#4299e1", "#63b3ed", "#2b6cb0", true);
+            }
+            if (Object.values(pv).some(v => v > 0)) { content += `<circle cx="300" cy="350" r="14" fill="#2d3748" />`; }
+            for(let i=0; i<pv['01']; i++) {
+                let row = Math.floor(i / 2); let col = i % 2;
+                content += getIsoSVG(350 + col*110, 150 + row*30, 80, 8, 80, "#48bb78", "#68d391", "#2f855a", true);
+            }
+            for(let i=0; i<pv['001']; i++) {
+                let row = Math.floor(i / 5); let col = i % 5;
+                content += getIsoSVG(650 + col*30, 100 + row*80, 8, 60, 8, "#ed8936", "#fbd38d", "#c05621", true);
+            }
+            for(let i=0; i<pv['0001']; i++) {
+                let row = Math.floor(i / 5); let col = i % 5;
+                content += getIsoSVG(980 + col*20, 150 + row*20, 8, 8, 8, "#e53e3e", "#fc8181", "#9b2c2c", false);
+            }
+            svg.innerHTML = content;
+        }
+
+        /* ================= 1-2 永不破圖的內建 SVG 圖片庫 + Wiki連結 ================= */
+        const bactDB = [
+            { name: "大腸桿菌", color: "#4299e1", wiki: "https://zh.wikipedia.org/zh-tw/%E5%A4%A7%E8%85%B8%E6%A1%BF%E8%8F%8C" },
+            { name: "金黃色葡萄球菌", color: "#d69e2e", wiki: "https://zh.wikipedia.org/zh-tw/%E9%87%91%E9%BB%83%E8%89%B2%E8%91%A1%E8%90%84%E7%90%83%E8%8F%8C" },
+            { name: "腸炎弧菌", color: "#48bb78", wiki: "https://zh.wikipedia.org/zh-tw/%E8%85%B8%E7%82%8E%E5%BC%A7%E8%8F%8C" },
+            { name: "仙人掌桿菌", color: "#ed8936", wiki: "https://zh.wikipedia.org/zh-tw/%E4%BB%99%E4%BA%BA%E6%8E%8C%E6%A1%BF%E8%8F%8C" },
+            { name: "紅血球", color: "#e53e3e", wiki: "https://zh.wikipedia.org/zh-tw/%E7%B4%85%E8%A1%80%E7%90%83" },
+            { name: "PM2.5", color: "#a0aec0", wiki: "https://zh.wikipedia.org/zh-tw/%E6%87%B8%E6%B5%AE%E5%BE%AE%E7%B2%92" },
+            { name: "酵母菌", color: "#9f7aea", wiki: "https://zh.wikipedia.org/zh-tw/%E9%85%B5%E6%AF%8D" },
+            { name: "微型海藻", color: "#38b2ac", wiki: "https://zh.wikipedia.org/zh-tw/%E5%BE%AE%E8%97%BB" }
+        ];
+
+        function getSafeImgSrc(name, color) {
+            const svgStr = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200"><rect width="400" height="200" fill="${color}" opacity="0.15"/><rect width="380" height="180" x="10" y="10" fill="none" stroke="${color}" stroke-width="4" stroke-dasharray="10,10" rx="10"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="36" font-weight="bold" fill="${color}">${name}</text><text x="50%" y="75%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="18" fill="#718096">(示意圖)</text></svg>`;
+            return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgStr);
+        }
+
+        let state12 = { active: false, idx: 0, strA: "", strB: "", nameA: "", nameB: "" };
+
+        function formatBactStr(numStr) {
+            if(!numStr.includes('.')) numStr += '.00000';
+            let parts = numStr.split('.');
+            let dec = parts[1].padEnd(5, '0');
+            return `${parts[0]}.${dec}`;
+        }
+
+        function generateBact() {
+            let idA = Math.floor(Math.random() * bactDB.length);
+            let idB = Math.floor(Math.random() * bactDB.length);
+            while(idA === idB) idB = Math.floor(Math.random() * bactDB.length);
+
+            state12.nameA = bactDB[idA].name;
+            state12.nameB = bactDB[idB].name;
+
+            document.getElementById('name-a').innerHTML = `${bactDB[idA].name} <a href="${bactDB[idA].wiki}" target="_blank" class="wiki-link">[維基百科]</a>`;
+            document.getElementById('img-a').src = getSafeImgSrc(bactDB[idA].name, bactDB[idA].color);
+            document.getElementById('name-b').innerHTML = `${bactDB[idB].name} <a href="${bactDB[idB].wiki}" target="_blank" class="wiki-link">[維基百科]</a>`;
+            document.getElementById('img-b').src = getSafeImgSrc(bactDB[idB].name, bactDB[idB].color);
+
+            state12.strA = (Math.random() * 0.009).toFixed(5);
+            state12.strB = (Math.random() * 0.009).toFixed(5);
+            resetUI12();
+        }
+
+        function setCustomBact() {
+            let vA = document.getElementById('custom-a').value;
+            let vB = document.getElementById('custom-b').value;
+            if(!vA || !vB) return alert("請輸入兩個自訂數字！");
+
+            state12.nameA = "自訂數字 A";
+            state12.nameB = "自訂數字 B";
+
+            document.getElementById('name-a').innerHTML = `自訂數字 A`;
+            document.getElementById('img-a').src = getSafeImgSrc("自訂數字 A", "#4a5568");
+            document.getElementById('name-b').innerHTML = `自訂數字 B`;
+            document.getElementById('img-b').src = getSafeImgSrc("自訂數字 B", "#4a5568");
+
+            state12.strA = formatBactStr(vA);
+            state12.strB = formatBactStr(vB);
+            resetUI12();
+        }
+
+        function resetUI12() {
+            document.getElementById('val-a-box').innerHTML = state12.strA.split('').map((c, i) => `<span class="digit-span" id="a-d${i}">${c}</span>`).join('');
+            document.getElementById('val-b-box').innerHTML = state12.strB.split('').map((c, i) => `<span class="digit-span" id="b-d${i}">${c}</span>`).join('');
+            document.getElementById('compare-symbol').innerHTML = "";
+            document.getElementById('floating-step-12').style.display = "none";
+            state12.active = false;
+        }
+
+        function startCompare() {
+            state12.active = true;
+            state12.idx = 0;
+            document.getElementById('compare-symbol').innerHTML = "";
+            
+            let floatBox = document.getElementById('floating-step-12');
+            document.getElementById('fs-text-12').innerHTML = "準備開始逐位比較！";
+            let btnNext = document.getElementById('btn-next-12');
+            btnNext.style.display = "block";
+            btnNext.innerText = "開始比較 ⏭️";
+            btnNext.onclick = nextStep12;
+            floatBox.style.display = "block";
+        }
+
+        function nextStep12() {
+            if(!state12.active) return;
+            let places = ["個位", "", "十分位", "百分位", "千分位", "萬分位", "十萬分位"];
+            let floatText = document.getElementById('fs-text-12');
+            let btnNext = document.getElementById('btn-next-12');
+
+            document.querySelectorAll('.digit-span').forEach(el => el.classList.remove('digit-active'));
+
+            while(state12.idx < state12.strA.length && state12.strA[state12.idx] === '.') {
+                state12.idx++;
+            }
+
+            if(state12.idx >= state12.strA.length) {
+                floatText.innerHTML = "所有位數都相同，兩者一樣大！";
+                document.getElementById('compare-symbol').innerText = "=";
+                btnNext.innerText = "完成 ✔️";
+                btnNext.onclick = () => { document.getElementById('floating-step-12').style.display = 'none'; };
+                state12.active = false;
+                return;
+            }
+
+            let i = state12.idx;
+            let spanA = document.getElementById(`a-d${i}`);
+            let spanB = document.getElementById(`b-d${i}`);
+            spanA.classList.add('digit-active'); spanB.classList.add('digit-active');
+
+            let valA = parseInt(state12.strA[i]), valB = parseInt(state12.strB[i]);
+            btnNext.innerText = "下一步 ⏭️";
+
+            if(valA === valB) {
+                floatText.innerHTML = `🔍 比較【${places[i]}】<br><span style="color:var(--highlight); font-size:40px">${valA} = ${valB}</span><br>相等，請點擊下一步看下一位！`;
+                state12.idx++;
+            } else {
+                document.getElementById('floating-step-12').style.backgroundColor = "rgba(229, 62, 62, 0.95)";
+                let winner = valA > valB ? state12.nameA : state12.nameB;
+                let symbol = valA > valB ? '>' : '<';
+                
+                floatText.innerHTML = `🚨 發現不同！<br><span style="font-size:50px">${valA} ${symbol} ${valB}</span><br>🏆 結論：【${winner}】 比較大！`;
+                document.getElementById('compare-symbol').innerText = symbol;
+                
+                btnNext.innerText = "完成 ✔️";
+                btnNext.onclick = () => { 
+                    document.getElementById('floating-step-12').style.display = 'none'; 
+                    document.getElementById('floating-step-12').style.backgroundColor = "rgba(0,0,0,0.85)";
+                };
+                state12.active = false;
+            }
+        }
+
+        /* ================= 1-3 手動直式加法 (靠右不遮擋) ================= */
+        let state13 = { active: false, i: 5, carry: 0, str1: [], str2: [] };
+
+        function generateMath() {
+            let mathNum1 = (Math.random() * 8 + 1).toFixed(3);
+            let mathNum2 = (Math.random() * 8 + 1).toFixed(3);
+            
+            state13.str1 = ('0' + mathNum1).split('');
+            state13.str2 = ('0' + mathNum2).split('');
+            let strAns = [' ',' ',' ',' ',' ',' '];
+            
+            let display1 = (' ' + mathNum1).split('');
+            let html = `<div class="math-row">` + display1.map((c, i) => `<div class="math-col" id="r1-c${i}">${c}</div>`).join('') + `</div>`;
+            let display2 = ('+' + mathNum2).split('');
+            html += `<div class="math-row">` + display2.map((c, i) => `<div class="math-col" id="r2-c${i}">${c}</div>`).join('') + `</div>`;
+            html += `<div class="math-line"></div>`;
+            html += `<div class="math-row">` + strAns.map((c, i) => `<div class="math-col" id="ans-c${i}">${c}</div>`).join('') + `</div>`;
+            
+            document.getElementById('math-display').innerHTML = html;
+            document.getElementById('floating-step-13').style.display = "none";
+            document.getElementById('math-steps').innerHTML = "請點擊上方按鈕開始計算。";
+            state13.active = false;
+        }
+
+        function startMath() {
+            state13.active = true;
+            state13.i = 5;
+            state13.carry = 0;
+            
+            let floatBox = document.getElementById('floating-step-13');
+            document.getElementById('fs-text-13').innerHTML = "準備從最右邊開始計算！";
+            let btn = document.getElementById('btn-next-13');
+            btn.style.display = "block";
+            btn.innerText = "開始計算 ⏭️";
+            btn.onclick = nextStep13;
+            
+            floatBox.style.display = "block";
+            document.getElementById('math-steps').innerHTML = "<h3 style='margin-top:0'>📝 計算紀錄：</h3>";
+        }
+
+        function nextStep13() {
+            if(!state13.active) return;
+            const floatText = document.getElementById('fs-text-13');
+            const btnNext = document.getElementById('btn-next-13');
+            const stepBox = document.getElementById('math-steps');
+            const placeNames = ['進位區', '個位', '', '十分位', '百分位', '千分位'];
+
+            document.querySelectorAll('.math-col').forEach(el => el.classList.remove('active'));
+
+            if(state13.i === 2) { 
+                document.getElementById(`ans-c2`).innerText = '.';
+                state13.i--; 
+            }
+
+            if(state13.i < 1) { 
+                if(state13.carry === 1) {
+                    document.getElementById(`ans-c0`).innerText = '1';
+                    document.getElementById(`ans-c0`).style.color = "red";
+                    floatText.innerHTML = `🚨 注意：<br>最後的進位 <span style="color:var(--highlight); font-size:45px">1</span> 也要寫下來！`;
+                    stepBox.innerHTML += `<p><span style="color:red">最後向左進位 1。</span></p>`;
+                } else {
+                    floatText.innerHTML = `✅ 計算完成！`;
+                }
+                btnNext.innerText = "完成 ✔️";
+                btnNext.onclick = () => { document.getElementById('floating-step-13').style.display = 'none'; };
+                state13.active = false;
+                return;
+            }
+
+            let i = state13.i;
+            let c1 = document.getElementById(`r1-c${i}`);
+            let c2 = document.getElementById(`r2-c${i}`);
+            let cAns = document.getElementById(`ans-c${i}`);
+            
+            c1.classList.add('active'); c2.classList.add('active');
+
+            let d1 = parseInt(state13.str1[i]);
+            let d2 = parseInt(state13.str2[i]);
+            let sum = d1 + d2 + state13.carry;
+            let digit = sum % 10;
+            
+            let floatHtml = `🔍 計算【${placeNames[i]}】<br>`;
+            floatHtml += `<span style="font-size:40px">${d1} + ${d2}${state13.carry > 0 ? ' <span style="color:var(--highlight)">+1(進)</span>' : ''} = ${sum}</span><br>`;
+            let logText = `<strong>【${placeNames[i]}】</strong> ${d1} + ${d2}${state13.carry > 0 ? ' + 1' : ''} = ${sum}。`;
+
+            if(sum >= 10) {
+                floatHtml += `👉 寫下 <span style="color:var(--highlight); font-size:45px">${digit}</span>，向左<span style="color:#fc8181">進位 1</span>`;
+                logText += `<span style="color:red">寫 ${digit}，向左進位 1。</span>`;
+                state13.carry = 1;
+            } else {
+                floatHtml += `👉 寫下 <span style="color:var(--highlight); font-size:45px">${digit}</span>`;
+                logText += `寫 ${digit}。`;
+                state13.carry = 0;
+            }
+            
+            floatText.innerHTML = floatHtml;
+            stepBox.innerHTML += `<p style="margin: 8px 0;">${logText}</p>`;
+            
+            cAns.innerText = digit;
+            cAns.style.color = "var(--primary)";
+            btnNext.innerText = "下一步 ⏭️";
+            
+            state13.i--;
+        }
+
+        /* ================= 1-4 手動數線判斷 (顯示精確落點與大約等於) ================= */
+        let state14 = { active: false, step: 1 };
+
+        function setupNumberLine() {
+            const val = parseFloat(document.getElementById('user-round-val').value);
+            if(isNaN(val)) return;
+            const targetMode = parseInt(document.getElementById('round-target').value);
+            let baseVal, stepScale;
+            
+            if(targetMode === 0) { baseVal = Math.floor(val); stepScale = 1; }
+            else if (targetMode === 1) { baseVal = Math.floor(val * 10) / 10; stepScale = 0.1; }
+            else { baseVal = Math.floor(val * 100) / 100; stepScale = 0.01; }
+            
+            const line = document.getElementById('n-line');
+            line.innerHTML = '';
+            
+            // 繪製基礎刻度
+            for(let i=0; i<=10; i++) {
+                let leftPct = i * 10;
+                let tickVal = baseVal + (i/10)*stepScale;
+                let tickStr = tickVal.toFixed(targetMode + 1);
+                let isMain = (i===0 || i===10);
+                line.innerHTML += `<div class="tick ${isMain ? 'tick-main' : ''}" style="left: ${leftPct}%"><div class="tick-label ${isMain ? 'tick-label-main' : ''}">${tickStr}</div></div>`;
+            }
+            
+            let ballPct = ((val - baseVal) / stepScale) * 100;
+            if(ballPct < 0) ballPct = 0; if(ballPct > 100) ballPct = 100;
+            
+            // 加入帶有真實數值的精確標籤 (隨小球移動)
+            line.innerHTML += `
+                <div class="ball" id="r-ball" style="left: ${ballPct}%">
+                    <div class="ball-exact-label">${val}</div>
+                </div>`;
+            
+            let midValStr = (baseVal + stepScale/2).toFixed(targetMode + 1 + (targetMode===0?1:0));
+            line.innerHTML += `<div class="red-line-label" id="r-line-label">判斷基準: ${midValStr}</div>`;
+            line.innerHTML += `<div class="red-line" id="r-line"></div>`;
+            
+            document.getElementById('floating-step-14').style.display = "none";
+            state14.active = false;
+        }
+
+        function startRounding() {
+            state14.active = true;
+            state14.step = 1;
+            document.getElementById('r-line').style.display = "none";
+            document.getElementById('r-line-label').style.display = "none";
+            
+            let floatBox = document.getElementById('floating-step-14');
+            document.getElementById('fs-text-14').innerHTML = "準備開始四捨五入判斷！";
+            let btn = document.getElementById('btn-next-14');
+            btn.style.display = "block";
+            btn.innerText = "看步驟一 ⏭️";
+            btn.onclick = nextStep14;
+            floatBox.style.display = "block";
+        }
+
+        function nextStep14() {
+            if(!state14.active) return;
+            const val = parseFloat(document.getElementById('user-round-val').value);
+            const targetMode = parseInt(document.getElementById('round-target').value);
+            const floatText = document.getElementById('fs-text-14');
+            const btnNext = document.getElementById('btn-next-14');
+            
+            let parts = val.toFixed(4).split('.');
+            let decisiveDigit = parseInt(parts[1][targetMode]);
+            let targetPlace = ["個位", "十分位", "百分位"][targetMode];
+            let judgePlace = ["十分位", "百分位", "千分位"][targetMode];
+
+            if(state14.step === 1) {
+                floatText.innerHTML = `<strong>步驟 1：找目標的下一位數</strong><br>目標是只留到「${targetPlace}」，我們要看它的下一位「${judgePlace}」<br>👉 數字為 <span style="color:var(--highlight); font-size: 50px;">${decisiveDigit}</span>`;
+                btnNext.innerText = "看步驟二 ⏭️";
+                state14.step = 2;
+            } 
+            else if (state14.step === 2) {
+                document.getElementById('r-line').style.display = "block";
+                document.getElementById('r-line-label').style.display = "block";
+                floatText.innerHTML = `<strong>步驟 2：與一半的「5」比較大小</strong><br> 👉 <span style="color:var(--highlight); font-size: 50px;">${decisiveDigit} ${decisiveDigit >= 5 ? '≥' : '<'} 5</span>`;
+                btnNext.innerText = "看步驟三 ⏭️";
+                state14.step = 3;
+            }
+            else if (state14.step === 3) {
+                const ball = document.getElementById('r-ball');
+                if(decisiveDigit >= 5) {
+                    floatText.innerHTML = `<strong>步驟 3：進位或捨去</strong><br>因為 ${decisiveDigit} ≥ 5<br>👉 <strong>【進位】</strong>！球往右找大數字`;
+                    ball.style.left = '100%';
+                } else {
+                    floatText.innerHTML = `<strong>步驟 3：進位或捨去</strong><br>因為 ${decisiveDigit} < 5<br>👉 <strong>【捨去】</strong>！球往左找原本數字`;
+                    ball.style.left = '0%';
+                }
+                btnNext.innerText = "看最終答案 ⏭️";
+                state14.step = 4;
+            }
+            else if (state14.step === 4) {
+                let baseVal = targetMode === 0 ? Math.floor(val) : (targetMode === 1 ? Math.floor(val*10)/10 : Math.floor(val*100)/100);
+                let stepScale = targetMode === 0 ? 1 : (targetMode === 1 ? 0.1 : 0.01);
+                let finalAnsStr = decisiveDigit >= 5 ? (baseVal + stepScale).toFixed(targetMode) : baseVal.toFixed(targetMode);
+
+                floatText.innerHTML = `✅ 四捨五入完成！<br><span style="font-size: 60px; color: var(--highlight); font-weight: bold; display:inline-block; margin-top:10px;">${val} ≒ ${finalAnsStr}</span>`;
+                
+                btnNext.innerText = "完成 ✔️";
+                btnNext.onclick = () => { document.getElementById('floating-step-14').style.display = 'none'; };
+                state14.active = false;
+            }
+        }
+
+        window.onload = () => {
+            drawTrueScaleSVG();
+            generateBact();
+            generateMath();
+            setupNumberLine();
+        }
+    </script>
+</body>
+</html>

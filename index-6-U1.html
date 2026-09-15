@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>因數與倍數：互動學習大冒險 4.1</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #2c3e50; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 950px; margin: 0 auto; background: white; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); overflow: hidden; position: relative; }
+        
+        .tabs { display: flex; background-color: #34495e; }
+        .tab-btn { flex: 1; padding: 15px; border: none; background: none; color: white; font-size: 16px; cursor: pointer; transition: 0.3s; font-weight: bold; }
+        .tab-btn:hover { background-color: #2c3e50; }
+        .tab-btn.active { background-color: #e74c3c; }
+        
+        .tab-content { display: none; padding: 30px; min-height: 550px; }
+        .tab-content.active { display: block; }
+        h2 { color: #2c3e50; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; margin-top: 0; }
+        button.action-btn { padding: 8px 16px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; color: white; background-color: #3498db; transition: 0.2s; margin: 5px; font-weight: bold; }
+        button.action-btn:hover { background-color: #2980b9; transform: scale(1.05); }
+        button.action-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* 1-1 戳泡泡 */
+        .controls { background: #ecf0f1; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        #game-board-1 { position: relative; width: 100%; height: 350px; background-color: #e0f7fa; border: 2px solid #b2ebf2; border-radius: 10px; overflow: hidden; margin-top: 10px; }
+        .bubble { position: absolute; width: 60px; height: 60px; background-color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 24px; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.2); user-select: none; animation: floatUp linear forwards; }
+        @keyframes floatUp { from { top: 350px; } to { top: -70px; } }
+        
+        /* 1-2 RPG 討伐戰 4.1 */
+        .rpg-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; margin-bottom: 15px; }
+        .rpg-header h2 { border: none; padding: 0; margin: 0; }
+        .rpg-layout { display: flex; justify-content: space-between; gap: 20px; }
+        .player-area, .monster-area { flex: 1; text-align: center; padding: 20px; border-radius: 15px; border: 4px dashed; }
+        .player-area { background: #e8f8f5; border-color: #1abc9c; position: relative; transition: 0.2s; }
+        .monster-area { background: #ffeaa7; border-color: #fdcb6e; position: relative; }
+        .monster-hp { font-size: 50px; font-weight: bold; color: #d63031; text-shadow: 2px 2px 0px #fff; }
+        .monster-img { font-size: 80px; margin: 10px 0; display: inline-block; animation: breathe 2s infinite ease-in-out; }
+        .hp-bar-container { width: 100%; height: 25px; background: #ddd; border-radius: 10px; overflow: hidden; margin: 10px 0; border: 2px solid #555; }
+        .hp-bar { height: 100%; background: #2ecc71; width: 100%; transition: width 0.3s, background 0.3s; }
+        @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        .weapon-rack { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px; }
+        .weapon-btn { background-color: #00b894; font-size: 18px; padding: 12px 18px; border-radius: 50px; transition: 0.3s; }
+        .stage-badge { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); background: #e74c3c; color: white; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 18px; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+        
+        /* 1-3 金庫解鎖大師 */
+        .vault-container { display: flex; gap: 20px; }
+        .vault-area { flex: 2; background: #2d3436; padding: 30px; border-radius: 15px; text-align: center; color: white; position: relative; overflow: hidden; }
+        .log-area { flex: 1; background: #fdf5e6; padding: 20px; border-radius: 15px; font-family: monospace; font-size: 20px; color: #333; overflow-y: auto; max-height: 350px; border: 3px solid #e1b12c; }
+        .dials { display: flex; justify-content: center; gap: 20px; margin-bottom: 20px; z-index: 2; position: relative; }
+        .dial { background: #dfe6e9; color: #2d3436; font-size: 50px; font-weight: bold; padding: 20px 30px; border-radius: 10px; border: 5px solid #b2bec3; }
+        .coin-btn { background-color: #f1c40f; color: #333; border-radius: 50%; width: 55px; height: 55px; font-size: 20px; margin: 5px; }
+        .step-row { display: flex; align-items: flex-end; margin-bottom: 5px; }
+        .step-factor { width: 30px; text-align: right; padding-right: 10px; color: #d35400; font-weight: bold; }
+        .step-nums { border-left: 2px solid #333; border-bottom: 2px solid #333; padding: 2px 10px; letter-spacing: 10px; }
+        .unlock-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(46, 204, 113, 0.95); display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 10; opacity: 0; transition: opacity 0.5s; }
+        .unlock-overlay.show { display: flex; opacity: 1; animation: popIn 0.5s; }
+        @keyframes popIn { 0% { transform: scale(0.8); } 100% { transform: scale(1); } }
+
+        /* 1-4 燈泡同頻 4.0 */
+        .bulb-track { display: flex; align-items: center; margin: 8px 0; background: #f8f9fa; padding: 8px 12px; border-radius: 10px; border-left: 5px solid #ccc; }
+        .bulb { width: 30px; height: 30px; border-radius: 50%; background: #bdc3c7; margin-right: 20px; transition: 0.05s; }
+        .bulb.flash-A { background: #f1c40f; box-shadow: 0 0 20px 5px #f1c40f; }
+        .bulb.flash-B { background: #e74c3c; box-shadow: 0 0 20px 5px #e74c3c; }
+        .bulb.flash-C { background: #3498db; box-shadow: 0 0 20px 5px #3498db; }
+        .bulb.flash-D { background: #2ecc71; box-shadow: 0 0 20px 5px #2ecc71; }
+        .bulb.flash-E { background: #9b59b6; box-shadow: 0 0 20px 5px #9b59b6; }
+        .timer-display { font-size: 18px; font-weight: bold; margin-left: auto; font-family: monospace; }
+        #track-C, #track-D, #track-E { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(1)">1-1 質數戳戳樂</button>
+        <button class="tab-btn" onclick="switchTab(2)">1-2 無盡 RPG 闖關</button>
+        <button class="tab-btn" onclick="switchTab(3)">1-3 金庫解鎖大師</button>
+        <button class="tab-btn" onclick="switchTab(4)">1-4 終極燈泡陣列</button>
+    </div>
+
+    <!-- 1-1 質數戳戳樂 -->
+    <div id="tab-1" class="tab-content active">
+        <h2>🎯 1-1 質數戳戳樂</h2>
+        <div class="controls">
+            時間：<select id="time-setting"><option value="60">1 分鐘</option><option value="120">2 分鐘</option></select>
+            難度：<select id="diff-setting"><option value="30">簡單 (1~30)</option><option value="50" selected>普通 (1~50)</option><option value="100">困難 (1~100)</option></select>
+            <button class="action-btn" id="start-btn-1" style="background:#27ae60;" onclick="startGame1()">開始遊戲</button>
+        </div>
+        <div style="font-size:20px;">剩餘時間: <span id="time-left-1" style="color:#d35400; font-weight:bold;">--</span> 秒 | 分數: <span id="score-1" style="font-weight:bold; color:#e74c3c;">0</span></div>
+        <div id="game-board-1"></div>
+    </div>
+
+    <!-- 1-2 RPG 討伐戰 (無盡闖關) -->
+    <div id="tab-2" class="tab-content">
+        <div class="rpg-header">
+            <h2>⚔️ 1-2 質因數 RPG (無盡生存模式)</h2>
+            <button class="action-btn" style="background:#c0392b; margin:0;" onclick="restartRPG()">🔄 重新開始冒險</button>
+        </div>
+        <p style="margin-top:0;">規則：使用因數武器攻擊！<strong>勇者血量不會在通關後恢復</strong>，看看你能撐到第幾關！</p>
+        <div class="rpg-layout">
+            <div class="player-area" id="player-area">
+                <h3 style="margin-top:0;">🧑‍🚀 勇者狀態</h3>
+                <div class="hp-bar-container"><div class="hp-bar" id="player-hp-bar"></div></div>
+                <div style="font-size:20px; font-weight:bold;">HP: <span id="player-hp-text">100</span>/100</div>
+                <div style="margin-top:15px; font-size:18px;">總分：<span id="score-2" style="color:#2980b9; font-weight:bold;">0</span></div>
+            </div>
+            
+            <div class="monster-area">
+                <div class="stage-badge" id="stage-badge">第 1 關</div>
+                <h3 style="margin-top:15px; color:#d35400;">👾 合數魔王</h3>
+                <div class="monster-img" id="monster-img">👹</div>
+                <div class="monster-hp" id="monster-hp">60</div>
+                <p id="msg-2" style="height:20px; font-weight:bold; color:#e17055;">野生怪物出現了！</p>
+            </div>
+        </div>
+
+        <div class="weapon-rack" id="weapon-rack">
+            <button class="action-btn weapon-btn" onclick="attack(2)">🗡️ 斬擊(2)</button>
+            <button class="action-btn weapon-btn" onclick="attack(3)">🏹 弓箭(3)</button>
+            <button class="action-btn weapon-btn" onclick="attack(5)">🔥 火球(5)</button>
+            <button class="action-btn weapon-btn" onclick="attack(7)">⚡ 雷擊(7)</button>
+            <button class="action-btn weapon-btn" onclick="attack(11)">❄️ 冰凍(11)</button>
+            <button class="action-btn weapon-btn" style="background:#8e44ad;" onclick="attack(13)">🔮 毒咒(13)</button>
+            <button class="action-btn weapon-btn" style="background:#2c3e50;" onclick="attack(17)">☄️ 隕石(17)</button>
+        </div>
+    </div>
+
+    <!-- 1-3 金庫解鎖大師 -->
+    <div id="tab-3" class="tab-content">
+        <h2>🏦 1-3 金庫解鎖大師 (短除法)</h2>
+        <div class="vault-container">
+            <div class="vault-area">
+                <div class="unlock-overlay" id="unlock-overlay">
+                    <div style="font-size: 80px;">💰✨</div><h1 style="color:white; text-shadow: 2px 2px 4px #000;">解鎖成功！</h1>
+                </div>
+                <h3 style="margin-top:0;">🔒 金庫密碼盤</h3>
+                <div class="dials">
+                    <div class="dial" id="dial-A">24</div><div class="dial" id="dial-B">36</div>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <button class="action-btn coin-btn" onclick="dropCoin(2)">2</button>
+                    <button class="action-btn coin-btn" onclick="dropCoin(3)">3</button>
+                    <button class="action-btn coin-btn" onclick="dropCoin(5)">5</button>
+                    <button class="action-btn coin-btn" onclick="dropCoin(7)">7</button>
+                </div>
+                <button class="action-btn" style="background-color:#e74c3c; font-size:22px; padding:12px 30px;" onclick="openVault()">🕹️ 互質！拉把手</button>
+                <p id="msg-3" style="font-weight:bold; color:#f1c40f; margin-bottom:0;"></p>
+            </div>
+            <div class="log-area">
+                <div style="text-align:center; font-weight:bold; border-bottom: 2px solid #ccc; padding-bottom:5px; margin-bottom:10px;">📝 短除法紀錄</div>
+                <div id="division-log"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1-4 實境燈泡驗證 4.0 -->
+    <div id="tab-4" class="tab-content">
+        <h2>💡 1-4 實境燈泡驗證 (最小公倍數)</h2>
+        <div style="margin-bottom: 15px;">
+            <strong style="font-size:16px;">選擇難度：</strong>
+            <button class="action-btn" onclick="setBulbMode(2)" style="background:#e67e22;">雙燈泡</button>
+            <button class="action-btn" onclick="setBulbMode(3)" style="background:#3498db;">三燈泡</button>
+            <button class="action-btn" onclick="setBulbMode(4)" style="background:#2ecc71;">四燈泡</button>
+            <button class="action-btn" onclick="setBulbMode(5)" style="background:#9b59b6;">五燈泡</button>
+        </div>
+        
+        <p style="font-size:16px; background:#f1f2f6; padding:10px; border-radius:5px; margin-top:0;">
+            各燈泡閃爍秒數：
+            <span style="color:#f39c12; font-weight:bold;">黃燈(<span id="timeA"></span>)</span>、
+            <span style="color:#c0392b; font-weight:bold;">紅燈(<span id="timeB"></span>)</span>
+            <span id="text-C">、<span style="color:#2980b9; font-weight:bold;">藍燈(<span id="timeC"></span>)</span></span>
+            <span id="text-D">、<span style="color:#27ae60; font-weight:bold;">綠燈(<span id="timeD"></span>)</span></span>
+            <span id="text-E">、<span style="color:#8e44ad; font-weight:bold;">紫燈(<span id="timeE"></span>)</span></span>。<br>
+            請問最快在第幾秒會「第一次全部同時閃爍」？
+        </p>
+        
+        <div style="background:#ecf0f1; padding:10px; border-radius:10px; margin-bottom: 10px;">
+            預測秒數：<input type="number" id="lcm-ans" style="padding:6px; font-size:16px; width:80px;">
+            <button class="action-btn" id="verify-btn" style="background:#27ae60; padding:6px 12px;" onclick="startVerification()">驗證</button>
+            <button class="action-btn" style="background:#95a5a6; padding:6px 12px;" onclick="nextGame4()">換題</button>
+        </div>
+
+        <div class="bulb-track" style="border-left-color: #f1c40f;"><div id="bulb-A" class="bulb"></div> <span class="timer-display">黃燈: <span id="sec-A">0</span> s</span></div>
+        <div class="bulb-track" style="border-left-color: #e74c3c;"><div id="bulb-B" class="bulb"></div> <span class="timer-display">紅燈: <span id="sec-B">0</span> s</span></div>
+        <div class="bulb-track" id="track-C" style="border-left-color: #3498db;"><div id="bulb-C" class="bulb"></div> <span class="timer-display">藍燈: <span id="sec-C">0</span> s</span></div>
+        <div class="bulb-track" id="track-D" style="border-left-color: #2ecc71;"><div id="bulb-D" class="bulb"></div> <span class="timer-display">綠燈: <span id="sec-D">0</span> s</span></div>
+        <div class="bulb-track" id="track-E" style="border-left-color: #9b59b6;"><div id="bulb-E" class="bulb"></div> <span class="timer-display">紫燈: <span id="sec-E">0</span> s</span></div>
+        
+        <div id="msg-4" style="font-size: 18px; font-weight: bold; margin-top: 10px; text-align: center;"></div>
+    </div>
+</div>
+
+<script>
+    function isPrime(num) {
+        if (num <= 1) return false;
+        if (num === 2) return true;
+        for (let i = 2; i <= Math.sqrt(num); i++) if (num % i === 0) return false;
+        return true;
+    }
+    function getGCD(a, b) { return b === 0 ? a : getGCD(b, a % b); }
+    function getLCM(a, b) { return (a * b) / getGCD(a, b); }
+    function getLCM3(a, b, c) { return getLCM(getLCM(a, b), c); }
+    function getLCM4(a, b, c, d) { return getLCM(getLCM3(a, b, c), d); }
+    function getLCM5(a, b, c, d, e) { return getLCM(getLCM4(a, b, c, d), e); }
+
+    function switchTab(tabIndex) {
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`tab-${tabIndex}`).classList.add('active');
+        document.querySelectorAll('.tab-btn')[tabIndex - 1].classList.add('active');
+    }
+
+    // ================== 1-1 戳泡泡 ==================
+    let score1 = 0; let timeLeft1 = 0; let game1Interval, timer1Interval; let isPlaying1 = false;
+    function startGame1() {
+        if(isPlaying1) return;
+        isPlaying1 = true; score1 = 0;
+        timeLeft1 = parseInt(document.getElementById('time-setting').value);
+        let maxNum = parseInt(document.getElementById('diff-setting').value);
+        document.getElementById('score-1').innerText = score1; document.getElementById('time-left-1').innerText = timeLeft1;
+        document.getElementById('start-btn-1').innerText = "遊戲中..."; document.getElementById('start-btn-1').disabled = true;
+        document.getElementById('game-board-1').innerHTML = "";
+        game1Interval = setInterval(() => createBubble(maxNum), 800);
+        timer1Interval = setInterval(() => {
+            timeLeft1--; document.getElementById('time-left-1').innerText = timeLeft1;
+            if(timeLeft1 <= 0) {
+                clearInterval(game1Interval); clearInterval(timer1Interval); isPlaying1 = false;
+                document.getElementById('start-btn-1').innerText = "重新開始"; document.getElementById('start-btn-1').disabled = false;
+                alert(`時間到！總分：${score1} 分`);
+            }
+        }, 1000);
+    }
+    function createBubble(maxNum) {
+        const board = document.getElementById('game-board-1'); const bubble = document.createElement('div');
+        bubble.className = 'bubble'; let num;
+        if(Math.random() < 0.45) {
+            let primes = []; for(let i=2; i<=maxNum; i++) if(isPrime(i)) primes.push(i);
+            num = primes[Math.floor(Math.random() * primes.length)];
+        } else if (Math.random() < 0.1) { num = 1; }
+        else { do { num = Math.floor(Math.random() * maxNum) + 1; } while(isPrime(num)); }
+        
+        bubble.innerText = num; bubble.style.left = Math.random() * (board.offsetWidth - 60) + 'px';
+        let duration = Math.random() * 2 + 2.5; bubble.style.animationDuration = duration + 's';
+        bubble.onclick = function() {
+            if(num === 1) { score1 -= 20; bubble.style.background = '#000'; bubble.style.color = '#fff'; }
+            else if(isPrime(num)) { score1 += 10; bubble.style.background = '#2ecc71'; bubble.style.color = '#fff'; }
+            else { score1 -= 10; bubble.style.background = '#e74c3c'; bubble.style.color = '#fff'; }
+            document.getElementById('score-1').innerText = score1; bubble.style.pointerEvents = 'none';
+            setTimeout(() => bubble.remove(), 200);
+        };
+        board.appendChild(bubble); setTimeout(() => { if(bubble.parentElement) bubble.remove(); }, duration * 1000);
+    }
+
+    // ================== 1-2 RPG 4.1 (新增重新開始機制) ==================
+    let monsterHP = 60; let score2 = 0; let playerHP = 100; let currentStage = 1; let iconIndex = 0;
+    const monsterEmojis = ['👹', '👾', '👽', '🦖', '🐉', '👻', '💀', '🧟', '🧛', '🦂', '🦅', '🦍'];
+    const rpgTargets = [26, 30, 34, 38, 39, 42, 45, 51, 52, 55, 57, 60, 65, 66, 68, 70, 72, 76, 78, 84, 85, 90, 91, 102, 105, 110, 114, 119, 130, 153];
+
+    function updatePlayerHP() {
+        let hpBar = document.getElementById('player-hp-bar');
+        hpBar.style.width = Math.max(0, playerHP) + '%';
+        if(playerHP < 30) hpBar.style.background = '#e74c3c';
+        else if (playerHP < 60) hpBar.style.background = '#f1c40f';
+        else hpBar.style.background = '#2ecc71';
+        document.getElementById('player-hp-text').innerText = Math.max(0, playerHP);
+    }
+
+    function restartRPG() {
+        playerHP = 100;
+        score2 = 0;
+        currentStage = 1;
+        document.getElementById('score-2').innerText = score2;
+        document.getElementById('player-area').style.filter = "none";
+        
+        // 恢復所有武器按鈕
+        let weapons = document.querySelectorAll('#weapon-rack .weapon-btn');
+        weapons.forEach(btn => btn.disabled = false);
+        
+        updatePlayerHP();
+        nextMonster();
+    }
+
+    function nextMonster() {
+        monsterHP = rpgTargets[Math.floor(Math.random() * rpgTargets.length)];
+        document.getElementById('stage-badge').innerText = `第 ${currentStage} 關`;
+        document.getElementById('monster-hp').innerText = monsterHP;
+        document.getElementById('msg-2').innerText = `第 ${currentStage} 關魔王出現！`;
+        document.getElementById('monster-hp').style.color = "#d63031";
+        document.getElementById('monster-img').innerText = monsterEmojis[iconIndex % monsterEmojis.length];
+        iconIndex++;
+    }
+
+    function attack(weapon) {
+        if(playerHP <= 0) return alert(`勇者已倒下！請點擊上方的「重新開始冒險」。`);
+        let msgEl = document.getElementById('msg-2'); let hpEl = document.getElementById('monster-hp');
+        
+        if (monsterHP % weapon === 0) {
+            monsterHP /= weapon; hpEl.innerText = monsterHP;
+            hpEl.style.transform = "scale(1.3)"; setTimeout(() => hpEl.style.transform = "scale(1)", 200);
+            
+            if(isPrime(monsterHP)) {
+                msgEl.innerText = `💥 致命一擊！捕獲質數 ${monsterHP}！`;
+                msgEl.style.color = "#27ae60"; hpEl.style.color = "#27ae60";
+                score2 += 100 + (currentStage * 10); 
+                document.getElementById('score-2').innerText = score2;
+                currentStage++;
+                setTimeout(nextMonster, 1500);
+            } else {
+                msgEl.innerText = `⚔️ 攻擊有效！數字縮小！`; msgEl.style.color = "#e17055";
+            }
+        } else {
+            playerHP -= weapon; updatePlayerHP();
+            msgEl.innerText = `🛡️ 無效！受到 ${weapon} 點反彈傷害！`; msgEl.style.color = "#e74c3c";
+            
+            let pArea = document.getElementById('player-area');
+            pArea.style.transform = "translateX(5px)";
+            setTimeout(() => pArea.style.transform = "translateX(-5px)", 100);
+            setTimeout(() => pArea.style.transform = "translateX(0)", 200);
+
+            if(playerHP <= 0) {
+                msgEl.innerText = `💀 勇者倒下... 止步於第 ${currentStage} 關。請點擊重新開始！`;
+                pArea.style.filter = "grayscale(100%)";
+                // 禁用所有武器
+                let weapons = document.querySelectorAll('#weapon-rack .weapon-btn');
+                weapons.forEach(btn => btn.disabled = true);
+            }
+        }
+    }
+    nextMonster();
+
+    // ================== 1-3 金庫解鎖 (維持不變) ==================
+    let dialA, dialB; let logHTML = "";
+    function renderLog(factor, a, b, isStart = false) {
+        let logDiv = document.getElementById('division-log');
+        if (isStart) {
+            logHTML = `<div style="text-align:center; padding:10px 0;"> ${a} , ${b} </div>`; logDiv.innerHTML = logHTML;
+        } else {
+            logHTML = logHTML.replace(` ${a * factor} , ${b * factor} `, 
+                `<div class="step-row"><div class="step-factor">${factor}</div><div class="step-nums">${a * factor} ${b * factor}</div></div><div style="padding-left: 45px; letter-spacing: 12px;">${a} ${b}</div>`);
+            logDiv.innerHTML = logHTML;
+        }
+        logDiv.scrollTop = logDiv.scrollHeight;
+    }
+    function nextVault() {
+        const pairs = [[24, 36], [30, 45], [42, 70], [60, 84], [36, 90], [28, 91], [48, 60], [45, 75]];
+        let pair = pairs[Math.floor(Math.random() * pairs.length)];
+        dialA = pair[0]; dialB = pair[1];
+        document.getElementById('dial-A').innerText = dialA; document.getElementById('dial-B').innerText = dialB;
+        document.getElementById('msg-3').innerText = "等待投入硬幣..."; document.getElementById('unlock-overlay').classList.remove('show');
+        renderLog(null, dialA, dialB, true);
+    }
+    function dropCoin(coin) {
+        if(dialA % coin === 0 && dialB % coin === 0) {
+            dialA /= coin; dialB /= coin;
+            document.getElementById('dial-A').innerText = dialA; document.getElementById('dial-B').innerText = dialB;
+            document.getElementById('msg-3').innerText = `✔️ 成功提出 ${coin}`; renderLog(coin, dialA, dialB);
+        } else { document.getElementById('msg-3').innerText = `❌ ${coin} 不是公因數！`; }
+    }
+    function openVault() {
+        let isCoprime = true;
+        for(let i=2; i<=Math.min(dialA, dialB); i++) if(dialA % i === 0 && dialB % i === 0) { isCoprime = false; break; }
+        if(isCoprime) {
+            document.getElementById('unlock-overlay').classList.add('show'); setTimeout(nextVault, 2500);
+        } else { document.getElementById('msg-3').innerText = "🚨 警報！尚未互質！"; }
+    }
+    nextVault();
+
+    // ================== 1-4 實境燈泡 4.0 ==================
+    let tA, tB, tC, tD, tE, trueLCM4_val, vTimer;
+    let bulbMode = 2;
+
+    function setBulbMode(mode) {
+        bulbMode = mode;
+        document.getElementById('track-C').style.display = (mode >= 3) ? 'flex' : 'none';
+        document.getElementById('text-C').style.display = (mode >= 3) ? 'inline' : 'none';
+        document.getElementById('track-D').style.display = (mode >= 4) ? 'flex' : 'none';
+        document.getElementById('text-D').style.display = (mode >= 4) ? 'inline' : 'none';
+        document.getElementById('track-E').style.display = (mode === 5) ? 'flex' : 'none';
+        document.getElementById('text-E').style.display = (mode === 5) ? 'inline' : 'none';
+        nextGame4();
+    }
+
+    function nextGame4() {
+        clearInterval(vTimer); document.getElementById('verify-btn').disabled = false;
+        document.getElementById('msg-4').innerText = "";
+        const tracks = ['A', 'B', 'C', 'D', 'E'];
+        tracks.forEach(t => {
+            document.getElementById(`sec-${t}`).innerText = "0"; 
+            document.getElementById(`bulb-${t}`).classList.remove(`flash-${t}`);
+        });
+        document.getElementById('lcm-ans').value = "";
+
+        if (bulbMode === 2) {
+            const arr = [[3, 4], [4, 6], [5, 10], [6, 8], [8, 12], [9, 12]];
+            let sel = arr[Math.floor(Math.random() * arr.length)];
+            tA = sel[0]; tB = sel[1]; trueLCM4_val = getLCM(tA, tB);
+        } else if (bulbMode === 3) {
+            const arr = [[2, 3, 4], [3, 4, 6], [4, 6, 8], [2, 5, 10], [3, 5, 15], [2, 4, 6]];
+            let sel = arr[Math.floor(Math.random() * arr.length)];
+            tA = sel[0]; tB = sel[1]; tC = sel[2]; trueLCM4_val = getLCM3(tA, tB, tC);
+            document.getElementById('timeC').innerText = tC;
+        } else if (bulbMode === 4) {
+            const arr = [[2, 3, 4, 6], [2, 4, 6, 8], [3, 4, 6, 12], [2, 5, 10, 20], [2, 3, 4, 5], [2, 4, 5, 10]];
+            let sel = arr[Math.floor(Math.random() * arr.length)];
+            tA = sel[0]; tB = sel[1]; tC = sel[2]; tD = sel[3]; trueLCM4_val = getLCM4(tA, tB, tC, tD);
+            document.getElementById('timeC').innerText = tC; document.getElementById('timeD').innerText = tD;
+        } else if (bulbMode === 5) {
+            const arr = [[2, 3, 4, 5, 6], [2, 4, 6, 8, 12], [2, 4, 5, 10, 20], [3, 6, 9, 12, 18], [2, 3, 4, 6, 12]];
+            let sel = arr[Math.floor(Math.random() * arr.length)];
+            tA = sel[0]; tB = sel[1]; tC = sel[2]; tD = sel[3]; tE = sel[4]; trueLCM4_val = getLCM5(tA, tB, tC, tD, tE);
+            document.getElementById('timeC').innerText = tC; document.getElementById('timeD').innerText = tD; document.getElementById('timeE').innerText = tE;
+        }
+        document.getElementById('timeA').innerText = tA; document.getElementById('timeB').innerText = tB;
+    }
+
+    function startVerification() {
+        let userAns = parseInt(document.getElementById('lcm-ans').value);
+        if(!userAns || userAns <= 0) return alert("請輸入預測秒數！");
+        
+        document.getElementById('verify-btn').disabled = true;
+        document.getElementById('msg-4').innerHTML = "⏳ 驗證中... 請盯緊燈泡！";
+        document.getElementById('msg-4').style.color = "#333";
+        
+        let currentSec = 0; let hasFlashedTogether = false;
+
+        vTimer = setInterval(() => {
+            currentSec++;
+            document.getElementById('sec-A').innerText = currentSec; document.getElementById('sec-B').innerText = currentSec;
+            if(bulbMode >= 3) document.getElementById('sec-C').innerText = currentSec;
+            if(bulbMode >= 4) document.getElementById('sec-D').innerText = currentSec;
+            if(bulbMode === 5) document.getElementById('sec-E').innerText = currentSec;
+            
+            let fA = (currentSec % tA === 0); let fB = (currentSec % tB === 0);
+            let fC = (bulbMode >= 3) ? (currentSec % tC === 0) : true;
+            let fD = (bulbMode >= 4) ? (currentSec % tD === 0) : true;
+            let fE = (bulbMode === 5) ? (currentSec % tE === 0) : true;
+            
+            if(fA) document.getElementById('bulb-A').classList.add('flash-A'); else document.getElementById('bulb-A').classList.remove('flash-A');
+            if(fB) document.getElementById('bulb-B').classList.add('flash-B'); else document.getElementById('bulb-B').classList.remove('flash-B');
+            if(bulbMode >= 3) { if(fC) document.getElementById('bulb-C').classList.add('flash-C'); else document.getElementById('bulb-C').classList.remove('flash-C'); }
+            if(bulbMode >= 4) { if(fD) document.getElementById('bulb-D').classList.add('flash-D'); else document.getElementById('bulb-D').classList.remove('flash-D'); }
+            if(bulbMode === 5) { if(fE) document.getElementById('bulb-E').classList.add('flash-E'); else document.getElementById('bulb-E').classList.remove('flash-E'); }
+
+            let allFlash = (fA && fB && fC && fD && fE);
+            if(allFlash && currentSec < userAns) hasFlashedTogether = true; 
+
+            if(currentSec === userAns) {
+                clearInterval(vTimer);
+                if(allFlash && !hasFlashedTogether) {
+                    document.getElementById('msg-4').innerHTML = `🎉 恭喜！燈泡在第 ${userAns} 秒【第一次同時閃爍】！`; document.getElementById('msg-4').style.color = "#27ae60";
+                    setTimeout(nextGame4, 4000);
+                } else if (allFlash && hasFlashedTogether) {
+                    document.getElementById('msg-4').innerHTML = `❌ 雖然同時亮了，但這不是【第一次】 (正解是 ${trueLCM4_val})`; document.getElementById('msg-4').style.color = "#e74c3c";
+                    document.getElementById('verify-btn').disabled = false;
+                } else {
+                    document.getElementById('msg-4').innerHTML = `❌ 第 ${userAns} 秒並沒有全部同時亮起喔！`; document.getElementById('msg-4').style.color = "#e74c3c";
+                    document.getElementById('verify-btn').disabled = false;
+                }
+                setTimeout(()=>{ 
+                    ['A','B','C','D','E'].forEach(t => document.getElementById(`bulb-${t}`).classList.remove(`flash-${t}`)); 
+                }, 1000);
+            }
+        }, 200); 
+    }
+    setBulbMode(2);
+</script>
+</body>
+</html>

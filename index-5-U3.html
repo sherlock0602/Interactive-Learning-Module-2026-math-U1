@@ -15,7 +15,7 @@
         .game-container { background: white; width: 95%; max-width: 900px; min-height: 500px; border-radius: 15px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); padding: 20px; box-sizing: border-box; display: none; flex-direction: column; align-items: center; position: relative; }
         .active-game { display: flex; }
         
-        /* === Game 1 & Endless === */
+        /* === Game 1 & Endless UI === */
         .g1-layout { display: flex; gap: 20px; width: 100%; margin-top: 5px; }
         .g1-left { flex: 1; display: flex; flex-direction: column; position: relative; }
         .g1-right { width: 240px; display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center; background: #fdfdfd; border: 2px solid #eee; border-radius: 12px; padding: 10px; }
@@ -32,6 +32,7 @@
         .shake { animation: shake 0.3s; }
         .combo-display { font-size: 20px; font-weight: bold; color: #f39c12; margin-top: 5px; }
         
+        /* 結算面版 (高質感半透明蒙版) */
         .summary-overlay, .setup-overlay { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(5px); z-index: 200; display: none; 
@@ -80,11 +81,13 @@
         }
         .lotus-leaf:hover { background: rgba(255,255,255,0.4); }
         
+        /* 鋪設荷葉 */
         .lotus-leaf.has-pad {
             background: linear-gradient(135deg, #2ecc71, #27ae60); border: 2px solid #219653; color: white;
             box-shadow: 0 4px 0 #1e8449, inset 0 2px 5px rgba(255,255,255,0.3); transform: translateY(-2px);
         }
 
+        /* 終點平台 */
         .finish-platform {
             height: 60px; width: 100%;
             background: linear-gradient(135deg, #95a5a6, #7f8c8d);
@@ -94,6 +97,7 @@
             box-shadow: 0 4px 0 #2c3e50; position: relative;
         }
 
+        /* 足跡亮燈與公倍數光芒 */
         .lotus-leaf.stepped-red { background: rgba(231, 76, 60, 0.4); border: 2px solid #e74c3c; color: #c0392b; box-shadow: 0 0 10px rgba(231, 76, 60, 0.5) inset; }
         .lotus-leaf.stepped-blue { background: rgba(52, 152, 219, 0.4); border: 2px solid #3498db; color: #2980b9; box-shadow: 0 0 10px rgba(52, 152, 219, 0.5) inset; }
         
@@ -103,17 +107,21 @@
         }
         @keyframes pulseGlow { from { box-shadow: 0 0 10px #f1c40f, 0 4px 0 #d35400; } to { box-shadow: 0 0 25px #f39c12, 0 4px 0 #d35400; } }
 
+        /* 青蛙定位 (JS控制 wrapper X, Y 且 Inner 控制拋物線) */
         .frog-wrapper {
             position: absolute; top: 0; left: 0; width: 60px; height: 60px; 
             display: flex; align-items: center; justify-content: center;
             pointer-events: none; z-index: 10; 
+            /* JS 將控制 transform 平移，因此移除 CSS transition */
         }
         
+        /* 底部對齊修正：預設保持 translateY(-15px) 讓腳底對齊網格中心 */
         .frog-inner { 
             font-size: 36px; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.3)); 
             transform: translateY(-15px); 
         }
         
+        /* 沉水與暈倒動畫 (以 -15px 為基準點) */
         .sink-anim { animation: sink 0.8s forwards; }
         @keyframes sink { 
             0% { transform: translateY(-15px) scale(1) rotate(0deg); opacity: 1; } 
@@ -333,7 +341,7 @@
         function feedMonster(choice) { let answer = 0; if (currentFood % 10 === 0) answer = 10; else if (currentFood % 5 === 0) answer = 5; else if (currentFood % 2 === 0) answer = 2; const msg = document.getElementById('g2-msg'); if (choice === answer) { g2Score += 10; msg.innerText = "✅ 好吃！"; msg.style.color = "#27ae60"; } else { g2Score -= 5; msg.innerText = `❌ 餵錯了！最適合的是 ${answer===0?"都不是":answer+" 的倍數"}`; msg.style.color = "#d63031"; } document.getElementById('g2-score').innerText = g2Score; setTimeout(nextFood, 800); }
 
 
-        /* ---------------- G3 青蛙過河 (完美物理連跳 + 結算面板版) ---------------- */
+        /* ---------------- G3 青蛙過河 (終極物理對齊與結算版) ---------------- */
         let g3GridState = []; 
         let isG3Testing = false;
         let frogJumpA = 4;
@@ -534,7 +542,7 @@
                             leaf.style.background = '#e74c3c'; leaf.style.color = '#fff'; leaf.classList.add('shake');
                             if(finalR === errorCell) { frogR_inner.innerText = '😵🐸'; frogR_inner.classList.add('dizzy-anim'); }
                             if(finalB === errorCell) { frogB_inner.innerText = '😵🐸'; frogB_inner.classList.add('dizzy-anim'); }
-                            reasonStr = `${errorCell} 不是公倍數，青蛙踩破假荷葉了！`;
+                            reasonStr = `${errorCell} 不是公倍數，青蛙踩破假荷葉掉下去了！`;
                         }
                         
                         await new Promise(r => setTimeout(r, 900));
@@ -545,7 +553,6 @@
                     }
                 }
 
-                // 正常推進
                 let pR = animateFrogJumpArc(frogR_wrapper, frogR_inner, rPos, nextR, -10);
                 let pB = animateFrogJumpArc(frogB_wrapper, frogB_inner, bPos, nextB, 20);
                 await Promise.all([pR, pB]);
@@ -600,7 +607,8 @@
             isG3Testing = false; document.getElementById('g3-test-btn').disabled = false;
         }
 
-        showGame('game3');
+        // Initialize App Default Tab -> 改為 game1
+        showGame('game1');
     </script>
 </body>
 </html>

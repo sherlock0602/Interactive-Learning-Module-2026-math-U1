@@ -1,23 +1,13 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8"> 
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>數學大冒險：倍數與因數</title>
     <style>
         :root { --primary: #4a90e2; --bg: #f5f7fa; }
-        
-        /* 💡 修正 3：防止狂點造成的文字選取與游標閃爍 */
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background-color: var(--bg); margin: 0; padding: 0; 
-            display: flex; flex-direction: column; align-items: center; overflow-x: hidden; 
-            user-select: none; /* 禁用全域反白選取 */
-            -webkit-user-select: none; 
-        }
-        /* 讓輸入框維持正常輸入功能 */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; user-select: none; -webkit-user-select: none; }
         input { user-select: auto; -webkit-user-select: auto; }
-
         header { background: #2d3436; color: white; width: 100%; text-align: center; padding: 15px 0; font-size: 24px; font-weight: bold; }
         nav { margin: 15px 0; display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; }
         button.nav-btn { background: var(--primary); color: white; border: none; padding: 10px 18px; font-size: 16px; border-radius: 8px; cursor: pointer; transition: 0.2s; font-weight: bold; }
@@ -30,10 +20,8 @@
         .g1-layout { display: flex; width: 100%; margin-top: 5px; height: 420px; flex-direction: column; }
         .wave-timer-container { width: 100%; height: 10px; background: #ccc; border-radius: 5px; overflow: hidden; margin-bottom: 10px; flex-shrink: 0; }
         .wave-timer-bar { height: 100%; width: 100%; background: #e74c3c; transition: width 0.05s linear; }
-        
         .bubble-area { flex: 1; background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%); border-radius: 12px; position: relative; box-shadow: inset 0 4px 15px rgba(0,100,200,0.1); overflow: hidden; width: 100%; }
         
-        /* HUD 介面 */
         .hud-boss { position: absolute; top: 15px; left: 15px; z-index: 50; display: flex; align-items: center; background: rgba(255,255,255,0.85); padding: 10px 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); gap: 10px; border: 2px solid #ff7675; pointer-events: none; transition: transform 0.1s; }
         .hud-player { position: absolute; bottom: 15px; right: 15px; z-index: 50; display: flex; align-items: center; background: rgba(255,255,255,0.85); padding: 10px 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); gap: 10px; border: 2px solid #00b894; pointer-events: none; transition: transform 0.1s; }
         .hud-sprite { font-size: 60px; position: relative; filter: drop-shadow(0 4px 5px rgba(0,0,0,0.2)); }
@@ -45,16 +33,9 @@
         
         .hp-bar { width: 120px; height: 12px; background: #ddd; border-radius: 6px; overflow: hidden; border: 1px solid #333; }
         .hp-fill { height: 100%; transition: 0.3s; }
-        
-        /* 💡 修正 2：加強受擊震動效果 (整個 HUD 面板一起震) */
         .shake { animation: hudShake 0.3s cubic-bezier(.36,.07,.19,.97) both; }
-        @keyframes hudShake {
-            0%, 100% { transform: translate3d(0, 0, 0); }
-            20%, 60% { transform: translate3d(-10px, 5px, 0); }
-            40%, 80% { transform: translate3d(10px, -5px, 0); }
-        }
+        @keyframes hudShake { 0%, 100% { transform: translate3d(0, 0, 0); } 20%, 60% { transform: translate3d(-10px, 5px, 0); } 40%, 80% { transform: translate3d(10px, -5px, 0); } }
         
-        /* 劍氣打擊特效 */
         .slash-fx { position: absolute; top: 50%; left: 50%; width: 140px; height: 10px; background: #fff; box-shadow: 0 0 20px #f1c40f, 0 0 10px #fff; border-radius: 5px; pointer-events: none; z-index: 100; animation: slashAnim 0.25s ease-out forwards; transform-origin: center; }
         .slash-fx-red { box-shadow: 0 0 20px #e74c3c, 0 0 10px #fff; animation: slashAnimRed 0.25s ease-out forwards; }
         @keyframes slashAnim { 0% { transform: translate(-50%, -50%) scaleX(0) rotate(45deg); opacity: 1; } 50% { transform: translate(-50%, -50%) scaleX(1) rotate(45deg); opacity: 1; } 100% { transform: translate(-50%, -50%) scaleX(1.3) rotate(45deg); opacity: 0; } }
@@ -73,23 +54,31 @@
         .lb-table tr:nth-child(even) { background-color: #f2f2f2; }
         .setup-input { padding: 10px; font-size: 18px; border-radius: 8px; border: 1px solid #ccc; margin: 10px 0; width: 180px; text-align: center; }
 
-        /* === Game 2 === */
-        .g2-sky { width: 100%; height: 350px; background: radial-gradient(circle at top, #1a2a6c, #112240, #000); border-radius: 15px; position: relative; overflow: hidden; box-shadow: inset 0 0 30px rgba(0,0,0,0.8); margin-top: 10px; border: 2px solid #2c3e50; }
-        .space-meteor { position: absolute; top: -80px; left: 50%; transform: translateX(-50%); width: 80px; height: 80px; background: radial-gradient(circle, #e67e22, #d35400); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; color: white; box-shadow: 0 0 20px #e67e22, inset -5px -5px 15px rgba(0,0,0,0.5); z-index: 10; }
-        .space-meteor::after { content: ''; position: absolute; top: -30px; left: 15px; width: 50px; height: 50px; background: radial-gradient(ellipse, rgba(243, 156, 18, 0.8), transparent); border-radius: 50%; filter: blur(8px); z-index: -1; }
+        /* === 🚀 Game 2: 星際隕石砲台 === */
+        .g2-sky { width: 100%; height: 420px; background: radial-gradient(circle at top, #1a2a6c, #112240, #000); border-radius: 15px; position: relative; overflow: hidden; box-shadow: inset 0 0 30px rgba(0,0,0,0.8); margin-top: 10px; border: 2px solid #2c3e50; }
+        
+        /* 💡 修復重點：加入 top: -80px，確保隕石有初始座標供動畫過渡 */
+        .space-meteor { position: absolute; top: -80px; left: 50%; transform: translateX(-50%); width: 75px; height: 75px; background: radial-gradient(circle, #e67e22, #d35400); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; color: white; box-shadow: 0 0 15px #e67e22, inset -5px -5px 10px rgba(0,0,0,0.5); z-index: 10; }
+        .space-meteor::after { content: ''; position: absolute; top: -25px; left: 15px; width: 40px; height: 40px; background: radial-gradient(ellipse, rgba(243, 156, 18, 0.7), transparent); border-radius: 50%; filter: blur(6px); z-index: -1; }
+        
         .g2-cannons { display: flex; gap: 15px; margin-top: 15px; width: 100%; justify-content: center; flex-wrap: wrap; }
-        .cannon-btn { flex: 1; min-width: 140px; padding: 15px 5px; font-size: 18px; font-weight: bold; border-radius: 10px; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; color: white; transition: 0.2s; box-shadow: 0 6px 0 rgba(0,0,0,0.4); text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
+        .cannon-btn { flex: 1; min-width: 130px; padding: 15px 5px; font-size: 18px; font-weight: bold; border-radius: 10px; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; color: white; transition: 0.1s; box-shadow: 0 6px 0 rgba(0,0,0,0.4); text-shadow: 1px 1px 3px rgba(0,0,0,0.5); outline: none; }
         .cannon-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,0.4); }
         .c-2 { background: linear-gradient(135deg, #3498db, #2980b9); } 
         .c-5 { background: linear-gradient(135deg, #2ecc71, #27ae60); } 
         .c-10 { background: linear-gradient(135deg, #9b59b6, #8e44ad); } 
         .c-0 { background: linear-gradient(135deg, #95a5a6, #7f8c8d); }
-        .g2-laser { position: absolute; bottom: 0; width: 8px; background: #00ffff; box-shadow: 0 0 20px #00ffff, 0 0 10px #fff; transform-origin: bottom; z-index: 5; animation: fireLaser 0.3s ease-out forwards; }
-        @keyframes fireLaser { 0% { height: 0; opacity: 1; } 40% { height: 400px; opacity: 1; } 100% { height: 400px; opacity: 0; } }
-        .g2-explosion { position: absolute; width: 120px; height: 120px; background: radial-gradient(circle, #fff, #f39c12, #e74c3c, transparent); border-radius: 50%; z-index: 15; transform: translate(-50%, -50%); animation: explode 0.5s ease-out forwards; pointer-events: none; mix-blend-mode: screen; }
+        
+        .g2-laser { position: absolute; bottom: 0; width: 12px; background: #00ffff; box-shadow: 0 0 20px #00ffff, 0 0 10px #fff; transform-origin: bottom; z-index: 5; animation: fireLaser 0.25s ease-out forwards; border-radius: 5px; }
+        @keyframes fireLaser { 0% { height: 0; opacity: 1; } 40% { height: 450px; opacity: 1; } 100% { height: 450px; opacity: 0; } }
+        
+        .g2-explosion { position: absolute; width: 120px; height: 120px; background: radial-gradient(circle, #fff, #f39c12, #e74c3c, transparent); border-radius: 50%; z-index: 15; transform: translate(-50%, -50%); animation: explode 0.4s ease-out forwards; pointer-events: none; mix-blend-mode: screen; }
         @keyframes explode { 0% { transform: translate(-50%, -50%) scale(0.2); opacity: 1; filter: brightness(2); } 100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; filter: brightness(1); } }
+        
+        .g2-floating-text { position: absolute; font-size: 32px; font-weight: bold; color: #f1c40f; text-shadow: 0 2px 5px rgba(0,0,0,0.8); pointer-events: none; z-index: 20; animation: floatUpFade 1s ease-out forwards; transform: translate(-50%, -50%); }
+        @keyframes floatUpFade { 0% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 100% { transform: translate(-50%, -100px) scale(1.5); opacity: 0; } }
 
-        /* === Game 3 === */
+        /* === Game 3: 青蛙過河 === */
         .river-container { width: 100%; max-height: 500px; overflow-y: auto; overflow-x: hidden; background: linear-gradient(180deg, #18dcff 0%, #17c0eb 100%); border-radius: 15px; padding: 15px; box-sizing: border-box; position: relative; box-shadow: inset 0 5px 15px rgba(0,0,0,0.1); margin-top: 10px; }
         .river-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px; width: 100%; position: relative; }
         .lotus-leaf { height: 60px; width: 100%; background: rgba(255,255,255,0.25); border: 2px dashed rgba(255,255,255,0.6); border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; display: flex; align-items: center; justify-content: center; font-size: 18px; color: rgba(0,0,0,0.5); font-weight: bold; cursor: pointer; transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s; position: relative; }
@@ -119,7 +108,7 @@
     <nav>
         <button class="nav-btn" onclick="showGame('game1');">3-1 闖關模式</button>
         <button class="nav-btn" onclick="showGame('game-endless');" style="background:#8e44ad;">3-1 無盡排行榜</button>
-        <button class="nav-btn" onclick="showGame('game2');">3-2 隕石砲台</button>
+        <button class="nav-btn" onclick="showGame('game2');">3-2 隕石防衛戰</button>
         <button class="nav-btn" onclick="showGame('game3');">3-3 青蛙過河實測</button>
     </nav>
 
@@ -132,7 +121,6 @@
             <div class="wave-timer-container"><div class="wave-timer-bar" id="g1-wave-timer-bar"></div></div>
             
             <div class="bubble-area" id="g1-bubble-area">
-                <!-- 魔王 HUD (左上) -->
                 <div class="hud-boss" id="g1-hud-boss">
                     <div class="hud-sprite">👿</div>
                     <div class="hud-stats">
@@ -143,7 +131,6 @@
                     </div>
                 </div>
 
-                <!-- 玩家 HUD (右下) -->
                 <div class="hud-player" id="g1-hud-player">
                     <div class="hud-stats" style="text-align: right;">
                         <div id="g1-combo-display" style="color: #f39c12; font-weight: bold; font-size:16px;">連擊: 0 / 4</div>
@@ -215,16 +202,18 @@
         </div>
     </div>
 
-    <!-- ================= Game 2: 星際隕石砲台 ================= -->
+    <!-- ================= 🚀 Game 2: 星際隕石砲台 (物理修復版) ================= -->
     <div id="game2" class="game-container">
         <h2 style="margin:0;">🚀 星際隕石防衛戰 (2, 5, 10 倍數)</h2>
         <div style="display: flex; justify-content: space-between; width: 100%; padding: 0 20px; box-sizing: border-box; margin-top: 10px;">
             <div style="font-size: 20px; font-weight: bold; color: #0984e3;">基地護盾: <span id="g2-hp" style="color:#e74c3c;">❤️❤️❤️</span></div>
+            <div style="font-size: 20px; font-weight: bold; color: #f39c12;">連擊加成: <span id="g2-combo-txt">0</span></div>
             <div style="font-size: 20px; font-weight: bold; color: #27ae60;">擊破分數: <span id="g2-score">0</span></div>
         </div>
         
         <div class="g2-sky" id="g2-sky">
             <div id="g2-msg" style="position:absolute; top:20px; width:100%; text-align:center; font-size:24px; font-weight:bold; color:#fff; z-index:20; text-shadow:0 2px 4px rgba(0,0,0,0.8);">請點擊下方對應雷射砲擊破隕石！</div>
+            <!-- Meteors dynamically generated here -->
         </div>
         
         <div class="g2-cannons">
@@ -288,7 +277,11 @@
             
             clearInterval(g1Loop); clearInterval(g1SpawnInterval); g1IsPlaying = false;
             clearInterval(geLoop); clearInterval(geSpawnInterval); geIsPlaying = false;
-            clearTimeout(g2MeteorTimer); clearTimeout(g2FallTimer); g2IsPlaying = false;
+            
+            clearTimeout(g2SpawnTimer); g2IsPlaying = false;
+            if (typeof g2Meteors !== 'undefined') {
+                g2Meteors.forEach(m => clearTimeout(m.timer));
+            }
 
             if(gameId === 'game1') initGame1();
             else if(gameId === 'game-endless') initEndless();
@@ -296,7 +289,6 @@
             else if(gameId === 'game3') document.getElementById('g3-setup-overlay').style.display='flex';
         }
 
-        /* --- ⚔️ 觸發劍氣特效函數 --- */
         function triggerSlash(targetId, isRed) {
             let target = document.getElementById(targetId);
             if(!target) return;
@@ -320,18 +312,8 @@
             const startBtn = document.getElementById('g1-start-btn'); startBtn.style.display = 'block'; startBtn.innerText = "開始戰鬥！"; startBtn.onclick = startGame1Loop; 
             document.getElementById('g1-msg').innerText = "點擊正確倍數！連續 4 次發動魔法爆擊！"; document.getElementById('g1-msg').style.color = "#d63031"; 
         }
-        function g1ResetBoss() { 
-            g1BossHp = g1BossMaxHp; let levelIdx = g1Level - 1; 
-            g1CurrentWeakness = levelIdx < weaknessProgression.length ? weaknessProgression[levelIdx] : weaknessProgression[weaknessProgression.length - 1] + (levelIdx - weaknessProgression.length + 1) * 2; 
-            document.getElementById('g1-boss-level').innerText = `關卡 ${g1Level}`; document.getElementById('g1-boss-weakness').innerText = `弱點：${g1CurrentWeakness} 的倍數`; 
-        }
-        function g1UpdateUI() { 
-            document.getElementById('g1-boss-hp-fill').style.width = Math.max(0, (g1BossHp/g1BossMaxHp)*100) + '%'; 
-            document.getElementById('g1-boss-hp-txt').innerText = Math.max(0, g1BossHp); 
-            document.getElementById('g1-player-hp-fill').style.width = Math.max(0, (g1PlayerHp/100)*100) + '%'; 
-            document.getElementById('g1-player-hp-txt').innerText = Math.max(0, g1PlayerHp); 
-            document.getElementById('g1-combo-display').innerText = `連擊: ${g1Combo} / 4`; 
-        }
+        function g1ResetBoss() { g1BossHp = g1BossMaxHp; let levelIdx = g1Level - 1; g1CurrentWeakness = levelIdx < weaknessProgression.length ? weaknessProgression[levelIdx] : weaknessProgression[weaknessProgression.length - 1] + (levelIdx - weaknessProgression.length + 1) * 2; document.getElementById('g1-boss-level').innerText = `關卡 ${g1Level}`; document.getElementById('g1-boss-weakness').innerText = `弱點：${g1CurrentWeakness} 的倍數`; }
+        function g1UpdateUI() { document.getElementById('g1-boss-hp-fill').style.width = Math.max(0, (g1BossHp/g1BossMaxHp)*100) + '%'; document.getElementById('g1-boss-hp-txt').innerText = Math.max(0, g1BossHp); document.getElementById('g1-player-hp-fill').style.width = Math.max(0, (g1PlayerHp/100)*100) + '%'; document.getElementById('g1-player-hp-txt').innerText = Math.max(0, g1PlayerHp); document.getElementById('g1-combo-display').innerText = `連擊: ${g1Combo} / 4`; }
         function startGame1Loop() { document.getElementById('g1-start-btn').style.display = 'none'; g1IsPlaying = true; g1MissedNumbers.clear(); g1NextWave(); }
         function g1GetNextTargetState() { if (g1TargetSpawnQueue.length === 0) { g1TargetSpawnQueue = [true, true, false, false, false]; for (let i = 4; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [g1TargetSpawnQueue[i], g1TargetSpawnQueue[j]] = [g1TargetSpawnQueue[j], g1TargetSpawnQueue[i]]; } } return g1TargetSpawnQueue.pop(); }
         function g1NextWave() { 
@@ -345,19 +327,14 @@
                 if (g1TimeLeft <= 0) { clearInterval(g1Loop); clearInterval(g1SpawnInterval); g1CheckWaveEnd(); } 
             }, 50); 
         }
-        
-        // 💡 修正 1：禁止泡泡生成在 HUD 區域
         function g1SpawnBubble() { 
             if(!g1IsPlaying) return; 
             const area = document.getElementById('g1-bubble-area'); const cw = area.clientWidth, ch = area.clientHeight; if (cw === 0 || ch === 0) return; 
             const size = Math.floor(Math.random() * 30) + 45; const r = size / 2; let x, y, isValid = false; 
             for (let i = 0; i < 30; i++) { 
                 x = Math.random() * (cw - size - 10) + 5; y = Math.random() * (ch - size - 10) + 5; isValid = true; 
-                
-                // 避開 HUD 面板區 (左上與右下，大約抓個寬度 280px 高度 120px)
                 if (x < 280 && y < 120) { isValid = false; continue; }
                 if (x > cw - 280 - size && y > ch - 120 - size) { isValid = false; continue; }
-
                 for (let b of g1BubblesArray) { 
                     let bx = parseFloat(b.dataset.x), by = parseFloat(b.dataset.y), br = parseFloat(b.dataset.r); 
                     if (Math.hypot((x + r) - (bx + br), (y + r) - (by + br)) < r + br + 5) { isValid = false; break; } 
@@ -383,10 +360,8 @@
             if(btn.dataset.correct === "true") { 
                 btn.remove(); g1BubblesArray = g1BubblesArray.filter(b => b !== btn); 
                 g1Combo++; g1BossHp -= 10; 
-                
                 triggerSlash('g1-hud-boss', false);
                 document.getElementById('g1-hud-boss').classList.add('shake'); setTimeout(() => document.getElementById('g1-hud-boss').classList.remove('shake'), 300); 
-                
                 if (g1Combo === 4) { 
                     g1BossHp -= 60; g1Combo = 0; 
                     let fx = document.createElement('div'); fx.className = 'special-fx'; fx.innerText = "⚡ 魔法連續爆擊 ⚡"; 
@@ -411,10 +386,8 @@
         function g1TakeDamage(amt, msg) { 
             g1PlayerHp -= amt; 
             document.getElementById('g1-msg').innerText = msg; document.getElementById('g1-msg').style.color = "#d63031"; 
-            
             triggerSlash('g1-hud-player', true);
             document.getElementById('g1-hud-player').classList.add('shake'); setTimeout(() => document.getElementById('g1-hud-player').classList.remove('shake'), 300); 
-            
             g1UpdateUI(); 
             if (g1PlayerHp <= 0) { 
                 g1IsPlaying = false; clearInterval(g1Loop); clearInterval(g1SpawnInterval); 
@@ -439,7 +412,6 @@
         /* ---------------- GE 無盡邏輯 ---------------- */
         let geLoop, geSpawnInterval, geWave = 1, gePlayerHp = 100, geCombo = 0, geTarget = 7, gePlayerId = "勇者", geTimeLeft = WAVE_TIME, geIsPlaying = false;
         let geBubblesArray = [], geTargetSpawnQueue = [], geMissedNumbers = new Set();
-        
         function initEndless() { document.getElementById('ge-setup-overlay').style.display = 'flex'; document.getElementById('ge-summary-overlay').style.display = 'none'; document.getElementById('ge-bubble-area').querySelectorAll('.bubble-btn').forEach(b=>b.remove()); let lastId = localStorage.getItem('math_last_id') || ""; if(lastId) document.getElementById('ge-input-id').value = lastId; }
         function startEndless() { let idInput = document.getElementById('ge-input-id').value.trim(); gePlayerId = idInput ? idInput : "無名英雄"; localStorage.setItem('math_last_id', gePlayerId); let t = parseInt(document.getElementById('ge-input-target').value); geTarget = (isNaN(t) || t < 2) ? 2 : t; document.getElementById('ge-setup-overlay').style.display = 'none'; geWave = 1; gePlayerHp = 100; geCombo = 0; geMissedNumbers.clear(); document.getElementById('ge-target-txt').innerText = `弱點：${geTarget} 的倍數`; geUpdateUI(); geIsPlaying = true; geNextWave(); }
         function geUpdateUI() { document.getElementById('ge-wave-txt').innerText = geWave; document.getElementById('ge-player-hp-fill').style.width = Math.max(0, (gePlayerHp/100)*100) + '%'; document.getElementById('ge-player-hp-txt').innerText = Math.max(0, gePlayerHp); document.getElementById('ge-combo-display').innerText = `連擊: ${geCombo} / 4`; }
@@ -467,7 +439,8 @@
                 if (geCombo >= 4) { geCombo = 0; gePlayerHp = Math.min(100, gePlayerHp + 10); let fx = document.createElement('div'); fx.className = 'special-fx'; fx.innerText = "✨ 魔法恢復 +10 HP ✨"; fx.style.color = "#27ae60"; document.getElementById('game-endless').appendChild(fx); setTimeout(() => fx.remove(), 800); } 
                 geUpdateUI(); 
             } else { 
-                btn.style.background = "radial-gradient(circle at 30% 30%, rgba(255,118,117,0.9), rgba(214,48,49,0.7))"; btn.style.animation = "none"; btn.style.transform = "scale(0.8) translateY(50px)"; btn.style.opacity = "0"; btn.style.transition = "all 0.3s ease-in"; setTimeout(() => { if(btn.parentNode) btn.remove(); geBubblesArray = geBubblesArray.filter(b => b !== btn); }, 300); geCombo = 0; geTakeDamage(10, "❌ 按錯了！連擊中斷並失血！"); 
+                btn.style.background = "radial-gradient(circle at 30% 30%, rgba(255,118,117,0.9), rgba(214,48,49,0.7))"; btn.style.animation = "none"; btn.style.transform = "scale(0.8) translateY(50px)"; btn.style.opacity = "0"; btn.style.transition = "all 0.3s ease-in"; setTimeout(() => { if(btn.parentNode) btn.remove(); geBubblesArray = geBubblesArray.filter(b => b !== btn); }, 300); 
+                geCombo = 0; geTakeDamage(10, "❌ 按錯了！連擊中斷並失血！"); 
             } 
         }
         function geCheckWaveEnd() { geBubblesArray.forEach(b => clearTimeout(b.dataset.timeoutId)); document.getElementById('ge-bubble-area').querySelectorAll('.bubble-btn').forEach(b=>b.remove()); geBubblesArray = []; document.getElementById('ge-msg').innerText = `第 ${geWave} 波結束！準備迎接下一波...`; document.getElementById('ge-msg').style.color = "#00b894"; geWave++; if(geIsPlaying) setTimeout(geNextWave, 1000); }
@@ -479,98 +452,136 @@
         }
         function endEndless(manualQuit) { geIsPlaying = false; clearInterval(geLoop); clearInterval(geSpawnInterval); geBubblesArray.forEach(b => clearTimeout(b.dataset.timeoutId)); let wavesSurvived = Math.max(0, geWave - 1); const overlay = document.getElementById('ge-summary-overlay'); overlay.style.display = 'flex'; document.getElementById('ge-summary-text').innerHTML = `英雄 <span style='color:#3498db;'>${gePlayerId}</span>，你在尋找 <span style='color:#e74c3c;'>${geTarget} 的倍數</span> 時，總共存活了 <span style='font-size:28px; color:#27ae60;'>${wavesSurvived}</span> 波！`; let missedStr = geMissedNumbers.size > 0 ? "漏掉的數字：<span style='color:#e74c3c; font-weight:bold;'>" + Array.from(geMissedNumbers).join(", ") + "</span>" : "太神了！沒有漏掉任何弱點！"; document.getElementById('ge-summary-missed').innerHTML = missedStr; let lb = JSON.parse(localStorage.getItem('math_leaderboard') || "[]"); lb.push({ id: gePlayerId, target: geTarget, waves: wavesSurvived }); lb.sort((a, b) => b.waves - a.waves); lb = lb.slice(0, 10); localStorage.setItem('math_leaderboard', JSON.stringify(lb)); let tbody = document.getElementById('ge-lb-tbody'); tbody.innerHTML = ''; lb.forEach((entry, idx) => { let tr = document.createElement('tr'); let rankStr = idx === 0 ? '👑 1' : (idx === 1 ? '🥈 2' : (idx === 2 ? '🥉 3' : idx + 1)); tr.innerHTML = `<td>${rankStr}</td><td>${entry.id}</td><td>${entry.target} 的倍數</td><td style="font-weight:bold; color:#d35400;">${entry.waves}</td>`; tbody.appendChild(tr); }); }
 
-        /* ---------------- G2 星際隕石砲台 ---------------- */
-        let g2Score = 0; let g2Hp = 3; let g2CurrentNum = 0; let g2IsPlaying = false;
-        let g2MeteorTimer, g2FallTimer;
+        /* ================= 🚀 Game 2: 星際隕石砲台 (修復墜落動畫版) ================= */
+        let g2Score = 0; let g2Hp = 3; let g2IsPlaying = false;
+        let g2Meteors = []; let g2Combo = 0;
+        let g2SpawnTimer; 
+        
+        let g2FallDuration = 8000; 
+        let g2SpawnInterval = 2500; 
 
         function initGame2() { 
-            g2Score = 0; g2Hp = 3; g2IsPlaying = true;
+            g2Score = 0; g2Hp = 3; g2Combo = 0; g2IsPlaying = true;
+            g2FallDuration = 8000; g2SpawnInterval = 2500;
+            
             document.getElementById('g2-score').innerText = g2Score;
             document.getElementById('g2-hp').innerText = "❤️❤️❤️";
+            document.getElementById('g2-combo-txt').innerText = g2Combo;
             document.getElementById('g2-msg').innerText = "太空雷達偵測中... 準備射擊！";
             document.getElementById('g2-msg').style.color = "#fff";
             document.getElementById('g2-summary-overlay').style.display = 'none';
             
-            let oldM = document.getElementById('g2-meteor');
-            if(oldM) oldM.remove();
+            document.querySelectorAll('.space-meteor').forEach(m => m.remove());
+            g2Meteors.forEach(m => clearTimeout(m.timer));
+            g2Meteors = [];
             
-            setTimeout(spawnG2Meteor, 1500); 
+            g2SpawnTimer = setTimeout(spawnG2MeteorLoop, 1000); 
+        }
+
+        function spawnG2MeteorLoop() {
+            if(!g2IsPlaying) return;
+            spawnG2Meteor();
+            g2SpawnTimer = setTimeout(spawnG2MeteorLoop, g2SpawnInterval);
         }
 
         function spawnG2Meteor() {
-            if(!g2IsPlaying) return;
-            const arr = [14, 25, 30, 42, 55, 60, 105, 120, 356, 725, 1340, 7435];
-            g2CurrentNum = arr[Math.floor(Math.random() * arr.length)];
+            const arr = [14, 25, 30, 42, 55, 60, 105, 120, 356, 725, 1340, 7435, 991, 1002, 5555, 8880];
+            let num = arr[Math.floor(Math.random() * arr.length)];
+            
+            let ans = 0;
+            if (num % 10 === 0) ans = 10;
+            else if (num % 5 === 0) ans = 5;
+            else if (num % 2 === 0) ans = 2;
             
             let sky = document.getElementById('g2-sky');
-            let m = document.createElement('div');
-            m.id = 'g2-meteor';
-            m.className = 'space-meteor';
-            m.innerText = g2CurrentNum;
-            sky.appendChild(m);
-
-            let randomX = Math.floor(Math.random() * 60) + 20;
-            m.style.left = randomX + '%';
+            let mEl = document.createElement('div');
+            mEl.className = 'space-meteor';
+            mEl.innerText = num;
             
-            setTimeout(() => {
-                if(!document.getElementById('g2-meteor')) return;
-                m.style.transition = 'top 5s linear';
-                m.style.top = '360px'; 
-            }, 50);
+            let randomX = Math.floor(Math.random() * 70) + 15; 
+            mEl.style.left = randomX + '%';
+            
+            // 💡 修正 1：明確給予初始 top 座標，讓 transition 能順利起作用
+            mEl.style.top = '-80px';
+            sky.appendChild(mEl);
 
-            g2FallTimer = setTimeout(() => {
-                if(g2IsPlaying && document.getElementById('g2-meteor')) {
-                    document.getElementById('g2-meteor').remove();
+            // 💡 修正 2：強制瀏覽器重繪 (Reflow)，讓它記得 -80px 的初始位置
+            mEl.offsetHeight;
+
+            let mObj = { el: mEl, num: num, ans: ans, timer: null };
+            g2Meteors.push(mObj);
+
+            // 直接觸發墜落動畫 (掉到底部 500px 的位置)
+            mEl.style.transition = `top ${g2FallDuration}ms linear`;
+            mEl.style.top = '500px';
+
+            mObj.timer = setTimeout(() => {
+                if(g2IsPlaying && g2Meteors.includes(mObj)) {
+                    g2Meteors = g2Meteors.filter(m => m !== mObj);
+                    mEl.remove();
+                    g2Combo = 0; 
+                    document.getElementById('g2-combo-txt').innerText = g2Combo;
                     takeG2Damage("⚠️ 隕石墜落！基地受損！");
                 }
-            }, 5000);
+            }, g2FallDuration);
         }
 
         function fireCannon(choice) {
-            if(!g2IsPlaying) return;
-            let m = document.getElementById('g2-meteor');
-            if(!m) return; 
+            if(!g2IsPlaying || g2Meteors.length === 0) return;
             
-            let answer = 0; 
-            if (g2CurrentNum % 10 === 0) answer = 10; 
-            else if (g2CurrentNum % 5 === 0) answer = 5; 
-            else if (g2CurrentNum % 2 === 0) answer = 2; 
-
+            let targetObj = g2Meteors[0]; 
+            
             let sky = document.getElementById('g2-sky');
             let laser = document.createElement('div');
             laser.className = 'g2-laser';
-            
             if(choice === 10) laser.style.background = '#9b59b6';
             else if(choice === 5) laser.style.background = '#2ecc71';
             else if(choice === 2) laser.style.background = '#3498db';
             else laser.style.background = '#95a5a6';
             
-            laser.style.left = m.style.left; 
+            laser.style.left = targetObj.el.style.left; 
             sky.appendChild(laser);
-            setTimeout(() => laser.remove(), 300);
+            setTimeout(() => laser.remove(), 250);
 
-            if (choice === answer) {
-                g2Score += 10; document.getElementById('g2-score').innerText = g2Score;
-                document.getElementById('g2-msg').innerText = "✅ 完美擊破！";
+            if (choice === targetObj.ans) {
+                clearTimeout(targetObj.timer);
+                g2Meteors.shift();
+                
+                g2Combo++;
+                let multiplier = 1 + Math.floor(g2Combo / 5);
+                let pts = 10 * multiplier;
+                g2Score += pts; 
+                
+                document.getElementById('g2-score').innerText = g2Score;
+                document.getElementById('g2-combo-txt').innerText = g2Combo;
+                document.getElementById('g2-msg').innerText = multiplier > 1 ? `🔥 Combo x${multiplier}！ (+${pts})` : "✅ 完美擊破！";
                 document.getElementById('g2-msg').style.color = "#2ecc71";
                 
-                let rect = m.getBoundingClientRect();
+                let rect = targetObj.el.getBoundingClientRect();
                 let skyRect = sky.getBoundingClientRect();
                 let mx = rect.left - skyRect.left + rect.width/2;
                 let my = rect.top - skyRect.top + rect.height/2;
                 
-                let exp = document.createElement('div');
-                exp.className = 'g2-explosion';
+                let exp = document.createElement('div'); exp.className = 'g2-explosion';
                 exp.style.left = mx + 'px'; exp.style.top = my + 'px';
-                sky.appendChild(exp);
-                setTimeout(() => exp.remove(), 500);
+                sky.appendChild(exp); setTimeout(() => exp.remove(), 400);
 
-                m.remove();
-                clearTimeout(g2FallTimer);
-                g2MeteorTimer = setTimeout(spawnG2Meteor, 800);
+                let floatTxt = document.createElement('div'); floatTxt.className = 'g2-floating-text';
+                floatTxt.innerText = `+${pts}`; floatTxt.style.left = mx + 'px'; floatTxt.style.top = (my - 20) + 'px';
+                sky.appendChild(floatTxt); setTimeout(() => floatTxt.remove(), 1000);
+
+                targetObj.el.remove();
+                
+                g2FallDuration = Math.max(3000, g2FallDuration - 150);
+                g2SpawnInterval = Math.max(800, g2SpawnInterval - 50);
                 
             } else {
-                takeG2Damage(`❌ 錯誤！該用 ${answer===0?"防護罩":answer+"號砲"}！`);
+                clearTimeout(targetObj.timer);
+                g2Meteors.shift();
+                targetObj.el.remove();
+                
+                g2Combo = 0; document.getElementById('g2-combo-txt').innerText = g2Combo;
+                takeG2Damage(`❌ 錯誤！該用 ${targetObj.ans===0?"防護罩":targetObj.ans+"號砲"}！`);
             }
         }
         
@@ -588,26 +599,19 @@
             document.getElementById('g2-msg').innerText = msg;
             document.getElementById('g2-msg').style.color = "#e74c3c";
             
-            let m = document.getElementById('g2-meteor');
-            if(m) m.remove();
-            clearTimeout(g2FallTimer);
-            
             if(g2Hp <= 0) {
                 g2IsPlaying = false;
+                clearTimeout(g2SpawnTimer);
+                g2Meteors.forEach(m => clearTimeout(m.timer));
                 document.getElementById('g2-final-score').innerText = g2Score;
                 document.getElementById('g2-summary-overlay').style.display = 'flex';
-            } else {
-                g2MeteorTimer = setTimeout(spawnG2Meteor, 1000);
             }
         }
-
 
         /* ---------------- G3 青蛙過河 ---------------- */
         let g3GridState = []; 
         let isG3Testing = false;
-        let frogJumpA = 4;
-        let frogJumpB = 6;
-        let maxRiverLength = 24;
+        let frogJumpA = 4; let frogJumpB = 6; let maxRiverLength = 24;
 
         function applyG3Setup() {
             let a = parseInt(document.getElementById('g3-input-a').value);
@@ -616,7 +620,6 @@
             frogJumpA = (isNaN(a) || a < 2) ? 2 : a;
             frogJumpB = (isNaN(b) || b < 2) ? 2 : b;
             maxRiverLength = (isNaN(m) || m < 5) ? 24 : m;
-            
             document.getElementById('g3-setup-overlay').style.display = 'none';
             initGame3();
         }
@@ -626,8 +629,7 @@
                 `紅蛙跳 <span style="color:#e74c3c; font-size:24px;">${frogJumpA}</span> 格，` +
                 `藍蛙跳 <span style="color:#0984e3; font-size:24px;">${frogJumpB}</span> 格。<br>請點擊荷葉，為牠們鋪設專屬的 <span style="color:#27ae60;">「公倍數」</span> 荷葉！`;
 
-            const grid = document.getElementById('river-grid');
-            grid.innerHTML = '';
+            const grid = document.getElementById('river-grid'); grid.innerHTML = '';
             document.querySelectorAll('.frog-wrapper').forEach(e => e.remove());
             
             g3GridState = Array(maxRiverLength + 2).fill(false);
@@ -635,61 +637,32 @@
             document.getElementById('g3-test-btn').disabled = false;
             document.getElementById('g3-msg').innerText = "";
             
-            const cols = 8;
-            grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+            const cols = 8; grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
             
             let endPos = maxRiverLength + 1;
             for(let i = 1; i <= endPos; i++) {
                 let cell = document.createElement('div');
-                
-                if (i === endPos) {
-                    cell.className = 'finish-platform';
-                    cell.id = 'leaf-' + i;
-                    cell.innerText = '終點站';
-                } else {
-                    cell.className = 'lotus-leaf';
-                    cell.id = 'leaf-' + i;
-                    cell.innerText = i;
-                    cell.onclick = () => {
-                        if(isG3Testing) return; 
-                        g3GridState[i] = !g3GridState[i];
-                        cell.classList.toggle('has-pad');
-                    };
+                if (i === endPos) { cell.className = 'finish-platform'; cell.id = 'leaf-' + i; cell.innerText = '終點站'; } 
+                else {
+                    cell.className = 'lotus-leaf'; cell.id = 'leaf-' + i; cell.innerText = i;
+                    cell.onclick = () => { if(isG3Testing) return; g3GridState[i] = !g3GridState[i]; cell.classList.toggle('has-pad'); };
                 }
-                
-                let row = Math.ceil(i / cols);
-                let rem = i % cols;
-                if(rem === 0) rem = cols;
+                let row = Math.ceil(i / cols); let rem = i % cols; if(rem === 0) rem = cols;
                 let col = (row % 2 !== 0) ? rem : (cols - rem + 1); 
-                
-                cell.style.gridRow = row;
-                cell.style.gridColumn = col;
-                grid.appendChild(cell);
+                cell.style.gridRow = row; cell.style.gridColumn = col; grid.appendChild(cell);
             }
         }
 
         function getPathPos(p) {
-            let i = Math.floor(p);
-            let f = p - i;
-            let endIdx = maxRiverLength + 1;
-            
-            if (i >= endIdx) return getCellPosition(endIdx);
-            if (i < 0) return getCellPosition(0);
-            
-            let p1 = getCellPosition(i);
-            let p2 = getCellPosition(i + 1);
-            return {
-                x: p1.x + f * (p2.x - p1.x),
-                y: p1.y + f * (p2.y - p1.y)
-            };
+            let i = Math.floor(p); let f = p - i; let endIdx = maxRiverLength + 1;
+            if (i >= endIdx) return getCellPosition(endIdx); if (i < 0) return getCellPosition(0);
+            let p1 = getCellPosition(i); let p2 = getCellPosition(i + 1);
+            return { x: p1.x + f * (p2.x - p1.x), y: p1.y + f * (p2.y - p1.y) };
         }
 
         function getCellPosition(index) {
             let cell1 = document.getElementById('leaf-1');
-            if(index <= 0) {
-                let startX = cell1 ? cell1.offsetLeft + (cell1.offsetWidth - 60) / 2 : 20;
-                return { x: startX, y: -70 }; 
-            }
+            if(index <= 0) { let startX = cell1 ? cell1.offsetLeft + (cell1.offsetWidth - 60) / 2 : 20; return { x: startX, y: -70 }; }
             let cell = document.getElementById('leaf-' + index);
             if(!cell) return { x: 0, y: 0 };
             return { x: cell.offsetLeft + (cell.offsetWidth - 60) / 2, y: cell.offsetTop + (cell.offsetHeight - 60) / 2 };
@@ -697,163 +670,88 @@
 
         async function animateFrogJumpArc(wrapper, inner, startIdx, endIdx, offsetX) {
             return new Promise(resolve => {
-                let startTime = null;
-                const duration = 800; 
-                const jumpHeight = 60; 
-
+                let startTime = null; const duration = 800; const jumpHeight = 60; 
                 function step(timestamp) {
                     if (!startTime) startTime = timestamp;
-                    let elapsed = timestamp - startTime;
-                    let t = Math.min(elapsed / duration, 1);
-
-                    let p = startIdx + t * (endIdx - startIdx);
-                    let groundPos = getPathPos(p);
+                    let elapsed = timestamp - startTime; let t = Math.min(elapsed / duration, 1);
+                    let p = startIdx + t * (endIdx - startIdx); let groundPos = getPathPos(p);
                     let arcY = -4 * jumpHeight * t * (1 - t);
-
                     wrapper.style.transform = `translate(${groundPos.x + offsetX}px, ${groundPos.y}px)`;
                     inner.style.transform = `translateY(calc(-15px + ${arcY}px))`; 
-
-                    if (t < 1) {
-                        requestAnimationFrame(step);
-                    } else {
-                        let finalPos = getCellPosition(endIdx);
-                        wrapper.style.transform = `translate(${finalPos.x + offsetX}px, ${finalPos.y}px)`;
-                        inner.style.transform = `translateY(-15px)`;
-                        resolve();
-                    }
+                    if (t < 1) requestAnimationFrame(step);
+                    else { let finalPos = getCellPosition(endIdx); wrapper.style.transform = `translate(${finalPos.x + offsetX}px, ${finalPos.y}px)`; inner.style.transform = `translateY(-15px)`; resolve(); }
                 }
                 requestAnimationFrame(step);
             });
         }
 
         async function startFrogTest() {
-            if (isG3Testing) return;
-            isG3Testing = true;
+            if (isG3Testing) return; isG3Testing = true;
             document.getElementById('g3-test-btn').disabled = true;
             document.getElementById('g3-msg').innerHTML = "<span style='color:#fff; background:#0984e3; padding:5px 15px; border-radius:20px;'>🐸 測試跳躍中...</span>";
             
             document.querySelectorAll('.frog-wrapper').forEach(e => e.remove());
-            document.querySelectorAll('.lotus-leaf, .finish-platform').forEach(e => {
-                e.classList.remove('common-multiple', 'stepped-red', 'stepped-blue');
-            });
+            document.querySelectorAll('.lotus-leaf, .finish-platform').forEach(e => { e.classList.remove('common-multiple', 'stepped-red', 'stepped-blue'); });
             
-            let trueCMs = [];
-            let errorCell = null; 
-            
-            for(let i=1; i<=maxRiverLength; i++) {
-                let isCM = (i % frogJumpA === 0 && i % frogJumpB === 0);
-                if (isCM) trueCMs.push(i);
-                if (isCM !== g3GridState[i] && errorCell === null) errorCell = i; 
-            }
+            let trueCMs = []; let errorCell = null; 
+            for(let i=1; i<=maxRiverLength; i++) { let isCM = (i % frogJumpA === 0 && i % frogJumpB === 0); if (isCM) trueCMs.push(i); if (isCM !== g3GridState[i] && errorCell === null) errorCell = i; }
 
             const grid = document.getElementById('river-grid');
-            let frogR_wrapper = document.createElement('div'); frogR_wrapper.className = 'frog-wrapper';
-            let frogR_inner = document.createElement('div'); frogR_inner.className = 'frog-inner'; frogR_inner.innerText = '🔴🐸';
-            frogR_wrapper.appendChild(frogR_inner); grid.appendChild(frogR_wrapper);
-            
-            let frogB_wrapper = document.createElement('div'); frogB_wrapper.className = 'frog-wrapper';
-            let frogB_inner = document.createElement('div'); frogB_inner.className = 'frog-inner'; frogB_inner.innerText = '🔵🐸';
-            frogB_wrapper.appendChild(frogB_inner); grid.appendChild(frogB_wrapper);
+            let frogR_wrapper = document.createElement('div'); frogR_wrapper.className = 'frog-wrapper'; let frogR_inner = document.createElement('div'); frogR_inner.className = 'frog-inner'; frogR_inner.innerText = '🔴🐸'; frogR_wrapper.appendChild(frogR_inner); grid.appendChild(frogR_wrapper);
+            let frogB_wrapper = document.createElement('div'); frogB_wrapper.className = 'frog-wrapper'; let frogB_inner = document.createElement('div'); frogB_inner.className = 'frog-inner'; frogB_inner.innerText = '🔵🐸'; frogB_wrapper.appendChild(frogB_inner); grid.appendChild(frogB_wrapper);
 
-            let rPos = 0, bPos = 0;
-            let endPos = maxRiverLength + 1; 
-            
+            let rPos = 0, bPos = 0; let endPos = maxRiverLength + 1; 
             let startPos = getCellPosition(0);
-            frogR_wrapper.style.transform = `translate(${startPos.x - 10}px, ${startPos.y}px)`;
-            frogB_wrapper.style.transform = `translate(${startPos.x + 10}px, ${startPos.y}px)`; 
-            
+            frogR_wrapper.style.transform = `translate(${startPos.x - 10}px, ${startPos.y}px)`; frogB_wrapper.style.transform = `translate(${startPos.x + 10}px, ${startPos.y}px)`; 
             await new Promise(r => setTimeout(r, 400)); 
 
-            let visitedR = new Set();
-            let visitedB = new Set();
+            let visitedR = new Set(); let visitedB = new Set();
 
             while(rPos < endPos || bPos < endPos) {
-                let nextR = Math.min(rPos + frogJumpA, endPos);
-                let nextB = Math.min(bPos + frogJumpB, endPos);
+                let nextR = Math.min(rPos + frogJumpA, endPos); let nextB = Math.min(bPos + frogJumpB, endPos);
                 
                 if(errorCell !== null) {
                     if ((rPos < errorCell && nextR >= errorCell) || (bPos < errorCell && nextB >= errorCell)) {
-                        let finalR = Math.min(nextR, errorCell);
-                        let finalB = Math.min(nextB, errorCell);
-                        
-                        let pR = animateFrogJumpArc(frogR_wrapper, frogR_inner, rPos, finalR, -10);
-                        let pB = animateFrogJumpArc(frogB_wrapper, frogB_inner, bPos, finalB, 20);
-                        await Promise.all([pR, pB]);
-
-                        let leaf = document.getElementById('leaf-' + errorCell);
-                        let reasonStr = "";
-                        
+                        let finalR = Math.min(nextR, errorCell); let finalB = Math.min(nextB, errorCell);
+                        let pR = animateFrogJumpArc(frogR_wrapper, frogR_inner, rPos, finalR, -10); let pB = animateFrogJumpArc(frogB_wrapper, frogB_inner, bPos, finalB, 20); await Promise.all([pR, pB]);
+                        let leaf = document.getElementById('leaf-' + errorCell); let reasonStr = "";
                         document.getElementById('g3-msg').innerHTML = `💥 <span style='color:#d63031;'>挑戰失敗！青蛙掉進水裡了...</span>`;
-                        
                         if (trueCMs.includes(errorCell)) {
-                            if(finalR === errorCell) frogR_inner.classList.add('sink-anim');
-                            if(finalB === errorCell) frogB_inner.classList.add('sink-anim');
-                            leaf.style.background = 'rgba(231, 76, 60, 0.5)';
-                            reasonStr = `${errorCell} 是公倍數，但你沒鋪荷葉！`;
+                            if(finalR === errorCell) frogR_inner.classList.add('sink-anim'); if(finalB === errorCell) frogB_inner.classList.add('sink-anim');
+                            leaf.style.background = 'rgba(231, 76, 60, 0.5)'; reasonStr = `${errorCell} 是公倍數，但你沒鋪荷葉！`;
                         } else {
                             leaf.style.background = '#e74c3c'; leaf.style.color = '#fff'; leaf.classList.add('shake');
-                            if(finalR === errorCell) { frogR_inner.innerText = '😵🐸'; frogR_inner.classList.add('dizzy-anim'); }
-                            if(finalB === errorCell) { frogB_inner.innerText = '😵🐸'; frogB_inner.classList.add('dizzy-anim'); }
+                            if(finalR === errorCell) { frogR_inner.innerText = '😵🐸'; frogR_inner.classList.add('dizzy-anim'); } if(finalB === errorCell) { frogB_inner.innerText = '😵🐸'; frogB_inner.classList.add('dizzy-anim'); }
                             reasonStr = `${errorCell} 不是公倍數，青蛙踩破假荷葉掉下去了！`;
                         }
-                        
-                        await new Promise(r => setTimeout(r, 900));
-                        document.getElementById('g3-msg').innerHTML = `💥 <span style='color:#d63031;'>失敗原因：${reasonStr}</span>`;
-                        
-                        document.getElementById('g3-test-btn').disabled = false; isG3Testing = false;
-                        return; 
+                        await new Promise(r => setTimeout(r, 900)); document.getElementById('g3-msg').innerHTML = `💥 <span style='color:#d63031;'>失敗原因：${reasonStr}</span>`;
+                        document.getElementById('g3-test-btn').disabled = false; isG3Testing = false; return; 
                     }
                 }
 
-                let pR = animateFrogJumpArc(frogR_wrapper, frogR_inner, rPos, nextR, -10);
-                let pB = animateFrogJumpArc(frogB_wrapper, frogB_inner, bPos, nextB, 20);
-                await Promise.all([pR, pB]);
+                let pR = animateFrogJumpArc(frogR_wrapper, frogR_inner, rPos, nextR, -10); let pB = animateFrogJumpArc(frogB_wrapper, frogB_inner, bPos, nextB, 20); await Promise.all([pR, pB]);
+                rPos = nextR; bPos = nextB;
                 
-                rPos = nextR;
-                bPos = nextB;
-                
-                if (rPos > 0 && rPos <= maxRiverLength) visitedR.add(rPos);
-                if (bPos > 0 && bPos <= maxRiverLength) visitedB.add(bPos);
-                
+                if (rPos > 0 && rPos <= maxRiverLength) visitedR.add(rPos); if (bPos > 0 && bPos <= maxRiverLength) visitedB.add(bPos);
                 for (let pos of [rPos, bPos]) {
                     if (pos > 0 && pos <= maxRiverLength) {
-                        let leaf = document.getElementById('leaf-' + pos);
-                        if (!leaf) continue;
-                        
+                        let leaf = document.getElementById('leaf-' + pos); if (!leaf) continue;
                         if (visitedR.has(pos) && visitedB.has(pos)) {
                             if (!leaf.classList.contains('common-multiple')) {
                                 leaf.className = 'lotus-leaf common-multiple';
-                                let pop = document.createElement('div'); pop.innerText = "公倍數！";
-                                pop.style.position = 'absolute'; pop.style.color = '#fff'; pop.style.fontWeight = 'bold';
-                                pop.style.fontSize = '24px'; pop.style.top = '-35px'; pop.style.left = '0';
-                                pop.style.textShadow = '0 2px 5px rgba(0,0,0,0.8)'; pop.style.animation = 'sink 1s forwards'; 
-                                leaf.appendChild(pop);
+                                let pop = document.createElement('div'); pop.innerText = "公倍數！"; pop.style.position = 'absolute'; pop.style.color = '#fff'; pop.style.fontWeight = 'bold'; pop.style.fontSize = '24px'; pop.style.top = '-35px'; pop.style.left = '0'; pop.style.textShadow = '0 2px 5px rgba(0,0,0,0.8)'; pop.style.animation = 'sink 1s forwards'; leaf.appendChild(pop);
                             }
-                        } else if (visitedR.has(pos)) {
-                            leaf.classList.add('stepped-red');
-                        } else if (visitedB.has(pos)) {
-                            leaf.classList.add('stepped-blue');
-                        }
+                        } else if (visitedR.has(pos)) { leaf.classList.add('stepped-red'); } else if (visitedB.has(pos)) { leaf.classList.add('stepped-blue'); }
                     }
                 }
-                
                 await new Promise(r => setTimeout(r, 400));
             }
 
             document.getElementById('g3-msg').innerHTML = "🎉 <span style='color:#27ae60;'>完美！青蛙順利抵達終點！</span>";
-            
             let summaryHTML = `<b>${frogJumpA}</b> 和 <b>${frogJumpB}</b> 在 ${maxRiverLength} 以內的<br>`;
-            if (trueCMs.length > 0) {
-                summaryHTML += `👉 公倍數有：<span style="color:#e67e22;">${trueCMs.join(', ')}</span><br>`;
-                summaryHTML += `👉 最小公倍數是：<span style="color:#e74c3c; font-size:32px; font-weight:bold;">${trueCMs[0]}</span>`;
-            } else {
-                summaryHTML += `👉 公倍數有：<span style="color:#e67e22;">無</span><br>`;
-                summaryHTML += `<span style="color:#e74c3c; font-size:20px; font-weight:bold;">⚠️ 荷葉數量不足夠找到最小公倍數</span>`;
-            }
-            
-            document.getElementById('g3-summary-text').innerHTML = summaryHTML;
-            document.getElementById('g3-summary-overlay').style.display = 'flex';
-            
+            if (trueCMs.length > 0) { summaryHTML += `👉 公倍數有：<span style="color:#e67e22;">${trueCMs.join(', ')}</span><br>`; summaryHTML += `👉 最小公倍數是：<span style="color:#e74c3c; font-size:32px; font-weight:bold;">${trueCMs[0]}</span>`; } 
+            else { summaryHTML += `👉 公倍數有：<span style="color:#e67e22;">無</span><br>`; summaryHTML += `<span style="color:#e74c3c; font-size:20px; font-weight:bold;">⚠️ 荷葉數量不足夠找到最小公倍數</span>`; }
+            document.getElementById('g3-summary-text').innerHTML = summaryHTML; document.getElementById('g3-summary-overlay').style.display = 'flex';
             isG3Testing = false; document.getElementById('g3-test-btn').disabled = false;
         }
 

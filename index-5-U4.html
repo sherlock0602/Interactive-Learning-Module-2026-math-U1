@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>擴分、約分與通分</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Noto+Sans+TC:wght@400;600;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    body { font-family: 'Zen Maru Gothic', 'Noto Sans TC', sans-serif; background-color: #fdfbf7; overflow-x: hidden; }
+    .math-frac { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; padding: 0 4px; font-weight: 900; line-height: 1.1; }
+    .math-frac .numerator { border-bottom: 2px solid currentColor; padding-bottom: 2px; }
+    .math-frac .denominator { padding-top: 2px; }
+    .tab-active { background: #f97316; color: white; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.35); }
+    
+    .biscuit-piece { transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    
+    @keyframes shake {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      20% { transform: translate(-4px, 3px) rotate(-1deg); }
+      40% { transform: translate(4px, -3px) rotate(1deg); }
+      60% { transform: translate(-4px, -3px) rotate(-1deg); }
+      80% { transform: translate(4px, 3px) rotate(1deg); }
+    }
+    .shake-effect { animation: shake 0.3s ease-in-out; }
+    
+    /* 遊戲畫布容器：移除正方形限制，改為寬螢幕填滿 */
+    .canvas-container {
+      width: 100%;
+      max-height: 70vh; /* 確保不超過螢幕高度 */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      margin: 0 auto;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      max-height: 70vh;
+      display: block;
+      object-fit: contain; /* 自動保持長方形比例，不變形 */
+      image-rendering: pixelated;
+      touch-action: none; 
+      cursor: crosshair;
+    }
+    .glow-text { text-shadow: 0 0 10px currentColor; }
+  </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+  <!-- 導航列 -->
+  <header class="bg-amber-500 text-white shadow-md relative z-50">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-3">
+        <!-- 移除了原本的圓圈4與魔法學院字樣 -->
+        <h1 class="text-xl md:text-2xl font-black tracking-wide">擴分、約分與通分</h1>
+      </div>
+      <nav class="flex flex-wrap gap-1 md:gap-2">
+        <button onclick="switchTab('tab-4-1')" id="btn-4-1" class="tab-btn tab-active px-3 py-1.5 rounded-xl font-bold text-sm">4-1 整數相除</button>
+        <button onclick="switchTab('tab-4-2')" id="btn-4-2" class="tab-btn bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-xl font-bold text-sm">4-2 摺紙擴分</button>
+        <button onclick="switchTab('tab-4-3')" id="btn-4-3" class="tab-btn bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-xl font-bold text-sm">4-3 化簡約分</button>
+        <button onclick="switchTab('tab-4-4')" id="btn-4-4" class="tab-btn bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-xl font-bold text-sm">4-4 通分比較</button>
+        <button onclick="switchTab('tab-game')" id="btn-game" class="tab-btn bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-xl font-bold text-sm flex items-center gap-1 shadow-lg">
+          <i class="fa-solid fa-gamepad"></i> 迷霧闖關
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="flex-grow max-w-7xl w-full mx-auto p-2 md:p-4 space-y-6 mt-2">
+
+    <!-- ==================== 4-1 ==================== -->
+    <section id="tab-4-1" class="tab-content block space-y-6 max-w-5xl mx-auto">
+      <div class="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-5 shadow-sm">
+        <h2 class="text-xl font-black text-amber-900"><i class="fa-solid fa-cookie-bite mr-2"></i>4-1 用分數表示整數相除的結果</h2>
+        <p class="text-slate-600 mt-1">當除法除不盡時，我們可以用分數來記錄！被除數 ÷ 除數 = <span class="math-frac text-amber-600"><span class="numerator">被除數</span><span class="denominator">除數</span></span></p>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-5">
+          <h3 class="font-bold text-lg text-slate-800 border-b pb-2 flex items-center gap-2"><i class="fa-solid fa-sliders text-amber-500"></i> 分大餅操作台</h3>
+          <div>
+            <div class="flex justify-between font-bold text-slate-700 mb-1"><span>共有幾個大餅？</span><span id="cake-count-label" class="text-amber-600 text-lg">2 個</span></div>
+            <input type="range" id="cake-count-slider" min="1" max="6" value="2" class="w-full accent-amber-500 cursor-pointer" oninput="updateDivideLab()">
+          </div>
+          <div>
+            <div class="flex justify-between font-bold text-slate-700 mb-1"><span>平分給幾個人？</span><span id="people-count-label" class="text-blue-600 text-lg">3 人</span></div>
+            <input type="range" id="people-count-slider" min="2" max="6" value="3" class="w-full accent-blue-500 cursor-pointer" oninput="updateDivideLab()">
+          </div>
+          <div class="pt-2">
+            <span class="text-xs font-bold text-slate-400 block mb-2">課本情境快速重現：</span>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="setDividePreset(1, 2)" class="px-2.5 py-1 bg-slate-100 hover:bg-amber-100 text-slate-700 rounded-lg text-xs font-bold transition">1餅平分2人</button>
+              <button onclick="setDividePreset(2, 3)" class="px-2.5 py-1 bg-slate-100 hover:bg-amber-100 text-slate-700 rounded-lg text-xs font-bold transition">2餅平分3人</button>
+              <button onclick="setDividePreset(4, 3)" class="px-2.5 py-1 bg-slate-100 hover:bg-amber-100 text-slate-700 rounded-lg text-xs font-bold transition">4餅平分3人</button>
+            </div>
+          </div>
+        </div>
+        <div class="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div id="divide-visual-box" class="min-h-[180px] flex flex-wrap items-center justify-center gap-6 p-4 bg-amber-50/50 rounded-xl border border-dashed border-amber-200"></div>
+          <div class="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 flex flex-wrap items-center justify-between gap-4">
+            <div id="divide-equation" class="text-2xl font-black text-slate-800 flex items-center gap-2"></div>
+            <div id="divide-mixed-badge" class="bg-white px-3 py-2 rounded-xl border border-blue-200 text-sm font-bold text-indigo-700 shadow-sm"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 4-2 ==================== -->
+    <section id="tab-4-2" class="tab-content hidden space-y-6 max-w-5xl mx-auto">
+      <div class="bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-200 rounded-2xl p-5 shadow-sm">
+        <h2 class="text-xl font-black text-emerald-900"><i class="fa-solid fa-layer-group mr-2"></i>4-2 擴分：等值分數的秘密</h2>
+        <p class="text-slate-600 mt-1">把分子和分母同時乘以一個大於 1 的整數，大小不變，叫做擴分。</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
+        <div class="flex flex-wrap justify-between items-center gap-4">
+          <h3 class="text-lg font-black text-slate-800 flex items-center gap-2"><i class="fa-solid fa-scroll text-emerald-500"></i> 紙條摺疊實驗室</h3>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-slate-500">基礎分數：</span>
+            <button onclick="setBaseFrac(3, 5)" id="base-3-5" class="base-frac-btn px-3 py-1.5 rounded-lg text-sm font-black bg-emerald-500 text-white shadow">3/5</button>
+            <button onclick="setBaseFrac(2, 3)" id="base-2-3" class="base-frac-btn px-3 py-1.5 rounded-lg text-sm font-black bg-slate-100 text-slate-700">2/3</button>
+          </div>
+        </div>
+        <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100 flex items-center gap-4">
+          <span class="bg-emerald-600 text-white text-xs font-bold px-2 py-1 rounded">細分倍數 (同乘)</span>
+          <span class="font-black text-2xl text-emerald-700">× <span id="expand-multiplier-text">2</span></span>
+          <input type="range" id="expand-multiplier-slider" min="1" max="6" value="2" class="flex-grow accent-emerald-600 cursor-pointer" oninput="renderExpandLab()">
+        </div>
+        <div class="space-y-4 pt-2">
+          <div>
+            <div class="flex justify-between items-center mb-1 text-sm font-bold text-slate-600"><span>原始紙條：<span id="strip-orig-label">3/5</span></span></div>
+            <div id="strip-original-container" class="h-12 w-full bg-slate-100 rounded-xl overflow-hidden flex border-2 border-slate-300 shadow-inner"></div>
+          </div>
+          <div>
+            <div class="flex justify-between items-center mb-1 text-sm font-bold text-emerald-800"><span>對摺擴分後：<span id="strip-expanded-label">6/10</span></span></div>
+            <div id="strip-expanded-container" class="h-12 w-full bg-slate-100 rounded-xl overflow-hidden flex border-2 border-emerald-400 shadow-inner"></div>
+          </div>
+        </div>
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 flex justify-center text-2xl font-black text-slate-700" id="expand-formula-box"></div>
+      </div>
+    </section>
+
+    <!-- ==================== 4-3 ==================== -->
+    <section id="tab-4-3" class="tab-content hidden space-y-6 max-w-5xl mx-auto">
+      <div class="bg-gradient-to-r from-sky-50 to-blue-50 border-2 border-sky-200 rounded-2xl p-5 shadow-sm">
+        <h2 class="text-xl font-black text-sky-900"><i class="fa-solid fa-scissors mr-2"></i>4-3 約分：找公因數來打包化簡</h2>
+        <p class="text-slate-600 mt-1">分子和分母同時除以一個大於 1 的公因數，得到相等的分數叫做約分。</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
+        <div class="flex flex-wrap justify-between items-center gap-4">
+          <h3 class="text-lg font-black text-slate-800 flex items-center gap-2"><i class="fa-solid fa-cube text-sky-500"></i> 公因數打包收納機</h3>
+          <div class="flex items-center gap-2">
+            <button onclick="loadReduceChallenge(6, 18)" id="red-btn-6-18" class="reduce-prob-btn px-3 py-1.5 rounded-lg text-sm font-black bg-sky-500 text-white shadow">6/18</button>
+            <button onclick="loadReduceChallenge(8, 12)" id="red-btn-8-12" class="reduce-prob-btn px-3 py-1.5 rounded-lg text-sm font-black bg-slate-100 text-slate-700">8/12</button>
+          </div>
+        </div>
+        <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 text-center space-y-4">
+          <div id="reduce-grid-container" class="flex flex-wrap justify-center gap-2 max-w-2xl mx-auto p-3 bg-white rounded-xl border border-slate-200 shadow-inner"></div>
+          <div id="reduce-group-desc" class="text-sm font-bold text-sky-800"></div>
+        </div>
+        <div class="space-y-3">
+          <div class="text-sm font-bold text-slate-700 flex items-center justify-between">
+            <span id="simplify-status">點選公因數進行打包：</span>
+          </div>
+          <div id="factors-btn-container" class="flex flex-wrap gap-3"></div>
+        </div>
+        <div id="reduce-calculation-result" class="p-4 bg-sky-50 rounded-xl border border-sky-200 flex flex-wrap items-center justify-between gap-4"></div>
+      </div>
+    </section>
+
+    <!-- ==================== 4-4 ==================== -->
+    <section id="tab-4-4" class="tab-content hidden space-y-6 max-w-5xl mx-auto">
+      <div class="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl p-5 shadow-sm">
+        <h2 class="text-xl font-black text-purple-900"><i class="fa-solid fa-scale-balanced mr-2"></i>4-4 通分與分數的大小比較</h2>
+        <p class="text-slate-600 mt-1">把不同分母的分數，化成相同分母的分數，就叫做「通分」。</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
+        <div class="flex flex-wrap justify-between items-center gap-3">
+          <h3 class="text-lg font-black text-slate-800">王伯伯的土地比較 (3/5 西瓜 vs 2/3 花生)</h3>
+          <button onclick="toggleCommonDenominator()" id="btn-do-tongfen" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-black rounded-xl shadow transition">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> 施展通分魔法！
+          </button>
+        </div>
+        <div class="space-y-6 pt-2">
+          <div class="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-200">
+            <div id="land-1-text" class="text-sm font-bold text-emerald-900 mb-2">🍉 種西瓜的地：3/5 塊地</div>
+            <div id="land-1-visual" class="h-10 w-full bg-slate-200 rounded-xl overflow-hidden flex border-2 border-emerald-400"></div>
+          </div>
+          <div class="p-4 bg-amber-50/50 rounded-2xl border border-amber-200">
+            <div id="land-2-text" class="text-sm font-bold text-amber-900 mb-2">🥜 種花生的地：2/3 塊地</div>
+            <div id="land-2-visual" class="h-10 w-full bg-slate-200 rounded-xl overflow-hidden flex border-2 border-amber-400"></div>
+          </div>
+        </div>
+        <div id="tongfen-result-box" class="p-4 bg-purple-50 rounded-xl border border-purple-200 text-center font-black text-purple-900 shadow-sm opacity-50">
+          因為 9/15 &lt; 10/15，所以花生田 (2/3) 用的地比較多！
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== ★ 寬螢幕隱藏搖桿 RPG 迷宮 ==================== -->
+    <section id="tab-game" class="tab-content hidden">
+      <div class="bg-slate-900 rounded-2xl p-3 md:p-6 shadow-2xl border-4 border-slate-800">
+        
+        <!-- 頂部資訊列 -->
+        <div class="flex flex-wrap justify-between items-center mb-4 gap-2 border-b border-slate-700 pb-3">
+          <div class="flex items-center gap-3">
+            <h2 class="text-xl md:text-2xl font-black text-emerald-400 glow-text"><i class="fa-solid fa-dungeon mr-2"></i>深淵分數迷宮</h2>
+            <div class="hidden sm:flex bg-slate-800 rounded-lg p-1 border border-slate-700 ml-2">
+              <span id="diff-badge" class="px-3 py-1 rounded-md text-sm font-bold text-white bg-emerald-600">難度：簡單</span>
+            </div>
+            <!-- 全知之眼倒數計時器 -->
+            <div id="vision-timer-badge" class="hidden px-3 py-1 rounded-md text-sm font-black text-blue-900 bg-cyan-300 shadow-[0_0_15px_rgba(103,232,249,0.8)] ml-2 transition-all">
+              <i class="fa-solid fa-eye"></i> 視野: <span id="vision-time">3.0</span>s
+            </div>
+          </div>
+          <div class="flex items-center gap-4">
+            <div class="flex gap-1 text-xl md:text-2xl drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]" id="health-container"></div>
+          </div>
+        </div>
+
+        <!-- 遊戲主佈局 (迷宮拓寬，佔比大幅增加) -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
+          
+          <!-- 左側：遊戲畫面 (Col-Span 3，超寬比例) -->
+          <div class="lg:col-span-3 flex justify-center items-center relative">
+            <div id="maze-wrapper" class="canvas-container bg-black rounded-xl border-4 border-slate-700 shadow-[0_0_30px_rgba(0,0,0,0.8)] overflow-hidden">
+              
+              <!-- 遊戲畫布 (解除正方形限制) -->
+              <canvas id="gameCanvas"></canvas>
+              
+              <!-- 受傷閃爍紅光 -->
+              <div id="damage-flash" class="absolute inset-0 bg-red-600/50 opacity-0 pointer-events-none transition-opacity duration-100 z-10"></div>
+
+              <!-- 提示文字 -->
+              <div class="absolute top-3 left-0 w-full text-center pointer-events-none z-10">
+                <span class="bg-black/60 text-slate-300 px-4 py-1.5 rounded-full text-xs md:text-sm shadow-lg backdrop-blur-sm border border-slate-600">
+                  <i class="fa-regular fa-hand-pointer"></i> 提示：直接在畫布上拖曳滑動，即可控制方向
+                </span>
+              </div>
+
+              <!-- 問題/謎語彈出視窗 -->
+              <div id="question-modal" class="hidden absolute inset-0 bg-slate-900/90 flex flex-col items-center justify-center p-4 text-center z-30 backdrop-blur-md">
+                <div id="modal-box" class="bg-slate-800 border-4 border-amber-500 rounded-3xl p-5 md:p-8 w-full max-w-md shadow-2xl">
+                  <h3 id="modal-title" class="text-xl md:text-2xl font-black text-amber-400 mb-2 glow-text"></h3>
+                  <p id="modal-desc" class="text-slate-300 text-sm md:text-base mb-6 leading-relaxed"></p>
+                  <div id="question-choices" class="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4"></div>
+                </div>
+              </div>
+
+              <!-- 遊戲結束/過關畫面 -->
+              <div id="game-over-modal" class="hidden absolute inset-0 bg-black/95 flex flex-col items-center justify-center p-6 text-center z-40 backdrop-blur-lg">
+                <div class="text-6xl md:text-7xl mb-6 glow-text" id="game-over-icon">💀</div>
+                <h3 id="game-over-title" class="text-3xl md:text-4xl font-black text-rose-500 mb-4 tracking-wider glow-text">挑戰失敗</h3>
+                <p id="game-over-desc" class="text-slate-400 text-base md:text-lg mb-8">生命值歸零，請重新挑戰！</p>
+                <button onclick="startGame('easy')" class="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white text-xl font-black rounded-2xl shadow-[0_0_20px_rgba(16,185,129,0.5)] transition hover:scale-105 active:scale-95">重新開始</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 右側：日誌與控制 (Col-Span 1) -->
+          <div class="lg:col-span-1 flex flex-col gap-4 max-h-[65vh]">
+            <div class="bg-slate-800 flex-grow rounded-2xl border-2 border-slate-700 flex flex-col overflow-hidden min-h-[150px]">
+              <div class="bg-slate-900 py-3 px-4 text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-700 flex justify-between">
+                <span>冒險日誌</span>
+                <span class="text-emerald-500"><i class="fa-solid fa-tower-broadcast"></i> 連線中</span>
+              </div>
+              <div id="game-log" class="p-4 overflow-y-auto flex flex-col gap-3 text-sm flex-grow bg-slate-800/50"></div>
+            </div>
+            <button onclick="startGame('easy')" class="w-full py-3 bg-rose-900/40 hover:bg-rose-800 text-rose-300 font-bold rounded-xl border border-rose-800 transition shadow-sm flex-shrink-0">
+              <i class="fa-solid fa-rotate-right"></i> 放棄並重置遊戲
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // ==================== ★ UI 頁籤切換與 4-1~4-4 原有邏輯 ★ ====================
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('tab-active');
+        btn.classList.add(btn.id === 'btn-game' ? 'bg-emerald-600' : 'bg-amber-600');
+      });
+      
+      const tabEl = document.getElementById(tabId);
+      tabEl.classList.remove('hidden');
+      document.getElementById(tabId.replace('tab-', 'btn-')).classList.add('tab-active');
+      
+      if(tabId === 'tab-game') {
+        if (gameState === 'init') startGame('easy');
+        setTimeout(() => { tabEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 150);
+      } else {
+        if (tabId === 'tab-4-1') updateDivideLab();
+        if (tabId === 'tab-4-2') renderExpandLab();
+        if (tabId === 'tab-4-3') loadReduceChallenge(currentReduceN, currentReduceD);
+        if (tabId === 'tab-4-4') renderTongfenVisual();
+      }
+    }
+
+    // 4-1
+    function setDividePreset(cakes, people) {
+      document.getElementById('cake-count-slider').value = Math.min(cakes, 6);
+      document.getElementById('people-count-slider').value = Math.min(people, 6);
+      updateDivideLab();
+    }
+    function updateDivideLab() {
+      const cakes = parseInt(document.getElementById('cake-count-slider').value);
+      const people = parseInt(document.getElementById('people-count-slider').value);
+      document.getElementById('cake-count-label').innerText = `${cakes} 個`;
+      document.getElementById('people-count-label').innerText = `${people} 人`;
+
+      const whole = Math.floor(cakes / people);
+      const rem = cakes % people;
+      let mixedStr = cakes >= people ? (rem === 0 ? `= ${whole}` : `= ${whole}<span class="math-frac text-indigo-700 ml-1"><span class="numerator">${rem}</span><span class="denominator">${people}</span></span>`) : '';
+      document.getElementById('divide-equation').innerHTML = `${cakes} ÷ ${people} = <span class="math-frac text-blue-700"><span class="numerator">${cakes}</span><span class="denominator">${people}</span></span> ${mixedStr ? `<span class="text-indigo-700 ml-2 font-black">${mixedStr}</span>` : ''}`;
+      document.getElementById('divide-mixed-badge').innerText = cakes > people ? (rem === 0 ? '整數' : '帶分數') : '真分數';
+
+      const visualBox = document.getElementById('divide-visual-box');
+      visualBox.innerHTML = '';
+      for (let i = 0; i < cakes; i++) {
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', '80'); svg.setAttribute('height', '80'); svg.setAttribute('viewBox', '0 0 100 100');
+        svg.classList.add('biscuit-piece', 'drop-shadow-sm');
+
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', '50'); circle.setAttribute('cy', '50'); circle.setAttribute('r', '45');
+        circle.setAttribute('fill', '#fde68a'); circle.setAttribute('stroke', '#d97706'); circle.setAttribute('stroke-width', '3');
+        svg.appendChild(circle);
+
+        const angleStep = 360 / people;
+        for (let p = 0; p < people; p++) {
+          const angle = (p * angleStep - 90) * Math.PI / 180;
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          line.setAttribute('x1', '50'); line.setAttribute('y1', '50'); line.setAttribute('x2', 50 + 45 * Math.cos(angle)); line.setAttribute('y2', 50 + 45 * Math.sin(angle));
+          line.setAttribute('stroke', '#b45309'); line.setAttribute('stroke-width', '2'); line.setAttribute('stroke-dasharray', '3 2');
+          svg.appendChild(line);
+        }
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        const startAngle = -90 * Math.PI / 180, endAngle = (angleStep - 90) * Math.PI / 180;
+        const x1 = 50 + 45 * Math.cos(startAngle), y1 = 50 + 45 * Math.sin(startAngle);
+        const x2 = 50 + 45 * Math.cos(endAngle), y2 = 50 + 45 * Math.sin(endAngle);
+        path.setAttribute('d', `M 50 50 L ${x1} ${y1} A 45 45 0 ${angleStep > 180 ? 1 : 0} 1 ${x2} ${y2} Z`);
+        path.setAttribute('fill', '#f97316'); path.setAttribute('opacity', '0.75');
+        svg.appendChild(path);
+
+        const wrap = document.createElement('div');
+        wrap.className = 'flex flex-col items-center';
+        wrap.innerHTML = `<span class="text-xs font-bold text-slate-500 mb-1">第 ${i + 1} 個大餅</span>`;
+        wrap.appendChild(svg);
+        visualBox.appendChild(wrap);
+      }
+    }
+
+    // 4-2
+    let baseNum = 3, baseDen = 5;
+    function setBaseFrac(n, d) {
+      baseNum = n; baseDen = d;
+      document.querySelectorAll('.base-frac-btn').forEach(b => { b.classList.replace('bg-emerald-500', 'bg-slate-100'); b.classList.replace('text-white', 'text-slate-700'); });
+      document.getElementById(`base-${n}-${d}`).classList.replace('bg-slate-100', 'bg-emerald-500');
+      document.getElementById(`base-${n}-${d}`).classList.replace('text-slate-700', 'text-white');
+      renderExpandLab();
+    }
+    function renderExpandLab() {
+      const mult = parseInt(document.getElementById('expand-multiplier-slider').value);
+      document.getElementById('expand-multiplier-text').innerText = mult;
+      
+      const origCont = document.getElementById('strip-original-container');
+      origCont.innerHTML = '';
+      document.getElementById('strip-orig-label').innerText = `${baseNum}/${baseDen}`;
+      for (let i = 0; i < baseDen; i++) {
+        const cell = document.createElement('div'); cell.style.flex = '1';
+        cell.className = `h-full border-r border-slate-300 last:border-r-0 flex items-center justify-center font-bold text-xs ${i < baseNum ? 'bg-emerald-400 text-emerald-950' : 'bg-slate-100'}`;
+        cell.innerText = `1/${baseDen}`;
+        origCont.appendChild(cell);
+      }
+
+      const newNum = baseNum * mult, newDen = baseDen * mult;
+      const expCont = document.getElementById('strip-expanded-container');
+      expCont.innerHTML = '';
+      document.getElementById('strip-expanded-label').innerText = `${newNum}/${newDen}`;
+      for (let i = 0; i < newDen; i++) {
+        const cell = document.createElement('div'); cell.style.flex = '1';
+        cell.className = `h-full ${(i + 1) % mult === 0 ? 'border-r-2 border-emerald-700' : 'border-r border-dashed border-emerald-300'} last:border-r-0 flex items-center justify-center text-[10px] ${i < newNum ? 'bg-emerald-400 font-semibold' : 'bg-slate-100'}`;
+        expCont.appendChild(cell);
+      }
+
+      document.getElementById('expand-formula-box').innerHTML = `<span class="math-frac"><span class="numerator">${baseNum}</span><span class="denominator">${baseDen}</span></span> = <span class="math-frac text-emerald-700"><span class="numerator">${baseNum} × ${mult}</span><span class="denominator">${baseDen} × ${mult}</span></span> = <span class="math-frac text-emerald-800"><span class="numerator">${newNum}</span><span class="denominator">${newDen}</span></span>`;
+    }
+
+    // 4-3
+    let currentReduceN = 6, currentReduceD = 18;
+    function loadReduceChallenge(n, d) {
+      currentReduceN = n; currentReduceD = d;
+      document.querySelectorAll('.reduce-prob-btn').forEach(b => { b.classList.replace('bg-sky-500', 'bg-slate-100'); b.classList.replace('text-white', 'text-slate-700'); });
+      document.getElementById(`red-btn-${n}-${d}`).classList.replace('bg-slate-100', 'bg-sky-500');
+      document.getElementById(`red-btn-${n}-${d}`).classList.replace('text-slate-700', 'text-white');
+      renderReduceUI(n, d, null);
+    }
+    function renderReduceUI(n, d, usedFactor) {
+      const grid = document.getElementById('reduce-grid-container');
+      grid.innerHTML = '';
+      for (let i = 0; i < d; i++) {
+        const dot = document.createElement('div');
+        dot.className = `w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shadow-sm ${i < n ? 'bg-rose-500 text-white' : 'bg-slate-200'}`;
+        dot.innerHTML = i < n ? '<i class="fa-solid fa-thumbtack"></i>' : '';
+        grid.appendChild(dot);
+      }
+      document.getElementById('reduce-group-desc').innerText = `分成 ${d} 份，其中 ${n} 份著色 (${n}/${d})`;
+
+      const factors = [];
+      for (let i = 2; i <= Math.min(n, d); i++) if (n % i === 0 && d % i === 0) factors.push(i);
+      
+      const factorContainer = document.getElementById('factors-btn-container');
+      factorContainer.innerHTML = '';
+      if (factors.length === 0) {
+        document.getElementById('simplify-status').innerText = '🎉 已是最簡分數！';
+      } else {
+        document.getElementById('simplify-status').innerText = '點選公因數進行打包：';
+        factors.forEach(f => {
+          const btn = document.createElement('button');
+          btn.className = 'px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-xl text-sm transition';
+          btn.innerText = `用 ${f} 約分 (÷${f})`;
+          btn.onclick = () => { currentReduceN = n/f; currentReduceD = d/f; renderReduceUI(currentReduceN, currentReduceD, f); };
+          factorContainer.appendChild(btn);
+        });
+      }
+
+      if (usedFactor) {
+        document.getElementById('reduce-calculation-result').innerHTML = `<div class="font-bold">進行了：<span class="math-frac"><span class="numerator">${n * usedFactor} ÷ ${usedFactor}</span><span class="denominator">${d * usedFactor} ÷ ${usedFactor}</span></span> = <span class="math-frac text-sky-700"><span class="numerator">${n}</span><span class="denominator">${d}</span></span></div><button onclick="loadReduceChallenge(${currentReduceN}, ${currentReduceD})" class="text-xs text-sky-600 underline">重設此題</button>`;
+      } else {
+        document.getElementById('reduce-calculation-result').innerHTML = `<div class="text-slate-600 text-sm">請點選上方按鈕，化簡分數！</div>`;
+      }
+    }
+
+    // 4-4
+    let isTongfenActive = false;
+    function toggleCommonDenominator() {
+      isTongfenActive = !isTongfenActive;
+      const btn = document.getElementById('btn-do-tongfen');
+      if (isTongfenActive) {
+        btn.innerHTML = `<i class="fa-solid fa-rotate-left"></i> 還原分母`; btn.classList.replace('bg-purple-600', 'bg-slate-600');
+      } else {
+        btn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> 施展通分魔法！`; btn.classList.replace('bg-slate-600', 'bg-purple-600');
+      }
+      renderTongfenVisual();
+    }
+    function renderTongfenVisual() {
+      const land1 = document.getElementById('land-1-visual'), land2 = document.getElementById('land-2-visual');
+      land1.innerHTML = ''; land2.innerHTML = '';
+
+      if (!isTongfenActive) {
+        document.getElementById('land-1-text').innerText = '🍉 種西瓜的地：3/5 塊地';
+        document.getElementById('land-2-text').innerText = '🥜 種花生的地：2/3 塊地';
+        for (let i = 0; i < 5; i++) {
+          const div = document.createElement('div'); div.style.flex = '1';
+          div.className = `h-full border-r-2 border-emerald-600 last:border-r-0 flex items-center justify-center font-bold text-xs ${i < 3 ? 'bg-emerald-500 text-white' : 'bg-slate-200'}`;
+          div.innerText = i < 3 ? '🍉' : ''; land1.appendChild(div);
+        }
+        for (let i = 0; i < 3; i++) {
+          const div = document.createElement('div'); div.style.flex = '1';
+          div.className = `h-full border-r-2 border-amber-600 last:border-r-0 flex items-center justify-center font-bold text-xs ${i < 2 ? 'bg-amber-500 text-white' : 'bg-slate-200'}`;
+          div.innerText = i < 2 ? '🥜' : ''; land2.appendChild(div);
+        }
+        document.getElementById('tongfen-result-box').classList.add('opacity-50');
+      } else {
+        document.getElementById('land-1-text').innerText = '🍉 種西瓜的地：9/15 塊地 (3/5 擴分)';
+        document.getElementById('land-2-text').innerText = '🥜 種花生的地：10/15 塊地 (2/3 擴分)';
+        for (let i = 0; i < 15; i++) {
+          const div = document.createElement('div'); div.style.flex = '1';
+          div.className = `h-full border-r border-emerald-700 last:border-r-0 flex items-center justify-center text-[10px] font-bold ${i < 9 ? 'bg-emerald-500 text-white' : 'bg-slate-200'}`;
+          div.innerText = i < 9 ? '🍉' : ''; land1.appendChild(div);
+        }
+        for (let i = 0; i < 15; i++) {
+          const div = document.createElement('div'); div.style.flex = '1';
+          div.className = `h-full border-r border-amber-700 last:border-r-0 flex items-center justify-center text-[10px] font-bold ${i < 10 ? 'bg-amber-500 text-white' : 'bg-slate-200'}`;
+          div.innerText = i < 10 ? '🥜' : ''; land2.appendChild(div);
+        }
+        document.getElementById('tongfen-result-box').classList.remove('opacity-50');
+      }
+    }
+
+
+    // ==================== ★ 寬螢幕平滑移動與迷宮核心系統 ★ ====================
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    let mapData = [];
+    let cols = 0, rows = 0, tileSize = 40; 
+    
+    let player = { x: 1, y: 1, dx: 1, dy: 1, targetX: 1, targetY: 1, speed: 0.25 };
+    let keys = { up: false, down: false, left: false, right: false };
+    
+    // ★ 隱藏虛擬搖桿狀態 ★
+    let joystick = { active: false, startX: 0, startY: 0, currentX: 0, currentY: 0 };
+    
+    let hp = 3, maxHp = 5;
+    let gameState = "init";
+    let activeObject = null;
+    let currentDifficulty = 'easy';
+    let animationId = null;
+    let visionTimer = 0; 
+
+    // ★ 寬螢幕難度設定 (cols 比 rows 多很多) ★
+    const difficultyConfig = {
+      'easy': { cols: 19, rows: 11, sight: 5.5, name: '簡單', next: 'medium' },
+      'medium': { cols: 27, rows: 15, sight: 4.5, name: '普通', next: 'hard' },
+      'hard': { cols: 39, rows: 21, sight: 3.5, name: '困難', next: 'victory' }
+    };
+
+    function generateMaze(cols, rows) {
+      let maze = Array.from({ length: rows }, () => Array(cols).fill(0));
+      
+      function carve(x, y) {
+        maze[y][x] = 1;
+        const dirs = [[0, -2], [0, 2], [-2, 0], [2, 0]].sort(() => Math.random() - 0.5);
+        for (let [dx, dy] of dirs) {
+          let nx = x + dx, ny = y + dy;
+          if (nx > 0 && nx < cols - 1 && ny > 0 && ny < rows - 1 && maze[ny][nx] === 0) {
+            maze[y + dy/2][x + dx/2] = 1;
+            carve(nx, ny);
+          }
+        }
+      }
+      carve(1, 1);
+      maze[1][1] = 2; maze[rows-2][cols-2] = 3;
+
+      for (let y = 1; y < rows - 1; y++) {
+        for (let x = 1; x < cols - 1; x++) {
+          if (maze[y][x] === 1 && !(x===1 && y===1) && !(x===cols-2 && y===rows-2)) {
+            let paths = 0;
+            if (maze[y-1][x] > 0) paths++; if (maze[y+1][x] > 0) paths++;
+            if (maze[y][x-1] > 0) paths++; if (maze[y][x+1] > 0) paths++;
+
+            if (paths === 1) { 
+              let r = Math.random();
+              if (r < 0.25) maze[y][x] = 5; 
+              else if (r < 0.45) maze[y][x] = 7; 
+            }
+            else if (paths === 2 && Math.random() < 0.08) maze[y][x] = 4; 
+            else if (paths >= 3 && Math.random() < 0.15) maze[y][x] = 8; 
+          }
+        }
+      }
+      return maze;
+    }
+
+    function getQuestion() {
+      let d1 = Math.floor(Math.random() * 8) + 3;
+      let n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
+      let d2 = d1 * (Math.floor(Math.random() * 3) + 2) + (Math.random() > 0.5 ? 1 : -1);
+      let n2 = Math.floor(Math.random() * (d2 - 1)) + 1;
+      let isFirstBigger = (n1/d1) > (n2/d2);
+      return {
+        title: "障礙寶箱", type: "chest",
+        desc: "請選出數值「<span class='text-white font-black border-b-2 border-amber-500'>比較大</span>」的分數：",
+        choices: [
+          { html: `<span class="math-frac"><span class="numerator">${n1}</span><span class="denominator">${d1}</span></span>` },
+          { html: `<span class="math-frac"><span class="numerator">${n2}</span><span class="denominator">${d2}</span></span>` }
+        ],
+        correctIndex: isFirstBigger ? 0 : 1
+      };
+    }
+
+    const riddleBank = [
+      { title: "真理之碑", type: "riddle", desc: "「我把一個披薩切成100片，拿走99片。剩下的雖然微小，但我依然是一個真分數。我是誰？」", choices: [{ html: '1/100' }, { html: '99/100' }], correctIndex: 0 },
+      { title: "等價之碑", type: "riddle", desc: "「我有兩個兄弟，2/3 和 4/6。雖然長得不一樣，但在圖形裡我們佔的地盤一樣大。我們被稱為什麼？」", choices: [{ html: '等值分數' }, { html: '假分數' }], correctIndex: 0 },
+      { title: "差距之碑", type: "riddle", desc: "「我不需要通分也知道，7/8 永遠比 8/9 小，因為我們離『完整(1)』都只差了一小步。請問 7/8 差了多少？」", choices: [{ html: '1/8' }, { html: '1/9' }], correctIndex: 0 },
+      { title: "本質之碑", type: "riddle", desc: "「分母越大，我越瘦小；分子越大，我越豐滿。當分子和分母一樣大時，我就變成了一個整數。我是誰？」", choices: [{ html: '分數' }, { html: '小數' }], correctIndex: 0 }
+    ];
+
+    function logMessage(msg, type='info') {
+      const logBox = document.getElementById('game-log');
+      const colors = { info: 'text-slate-400', success: 'text-emerald-400 font-bold', danger: 'text-rose-400', special: 'text-purple-400 font-bold', item: 'text-cyan-400 font-bold' };
+      logBox.innerHTML += `<div class="${colors[type]} transform transition duration-300 animate-[fadeIn_0.3s_ease-out]">▶ ${msg}</div>`;
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function startGame(diff) {
+      if (animationId) cancelAnimationFrame(animationId);
+      currentDifficulty = diff;
+      const config = difficultyConfig[diff];
+      cols = config.cols;
+      rows = config.rows;
+      
+      canvas.width = cols * tileSize;
+      canvas.height = rows * tileSize;
+      
+      mapData = generateMaze(cols, rows);
+      player = { x: 1, y: 1, dx: 1, dy: 1, targetX: 1, targetY: 1, speed: 0.25 };
+      if(diff === 'easy') hp = 3; 
+      gameState = "playing";
+      visionTimer = 0;
+      keys = { up: false, down: false, left: false, right: false };
+      joystick.active = false;
+      
+      document.getElementById('diff-badge').innerText = `難度：${config.name}`;
+      document.getElementById('question-modal').classList.add('hidden');
+      document.getElementById('game-over-modal').classList.add('hidden');
+      document.getElementById('vision-timer-badge').classList.add('hidden');
+      document.getElementById('game-log').innerHTML = ''; 
+      logMessage(`進入了 ${config.name} 難度的寬廣迷宮！`, 'special');
+      
+      updateHearts();
+      gameLoop(); 
+    }
+
+    function updateHearts() {
+      const container = document.getElementById('health-container');
+      container.innerHTML = '';
+      for(let i=0; i<maxHp; i++) {
+        if (i < hp) container.innerHTML += `<i class="fa-solid fa-heart text-rose-500 drop-shadow-md"></i>`;
+        else if (i < 3 || hp > 3) container.innerHTML += `<i class="fa-solid fa-heart-crack text-slate-700 opacity-40"></i>`;
+      }
+    }
+
+    // --- 鍵盤監聽 ---
+    window.addEventListener('keydown', (e) => {
+      if (gameState !== 'playing') return;
+      if (e.key === 'ArrowUp' || e.key === 'w') keys.up = true;
+      if (e.key === 'ArrowDown' || e.key === 's') keys.down = true;
+      if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
+      if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
+      if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key)) e.preventDefault();
+    });
+    window.addEventListener('keyup', (e) => {
+      if (e.key === 'ArrowUp' || e.key === 'w') keys.up = false;
+      if (e.key === 'ArrowDown' || e.key === 's') keys.down = false;
+      if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
+      if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
+    });
+
+    // ==================== ★ 隱藏虛擬搖桿系統 (Touch & Mouse) ★ ====================
+    canvas.addEventListener('pointerdown', (e) => {
+      if (gameState !== 'playing') return;
+      joystick.active = true;
+      const rect = canvas.getBoundingClientRect();
+      joystick.startX = (e.clientX - rect.left) * (canvas.width / rect.width);
+      joystick.startY = (e.clientY - rect.top) * (canvas.height / rect.height);
+      joystick.currentX = joystick.startX;
+      joystick.currentY = joystick.startY;
+      canvas.setPointerCapture(e.pointerId);
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      if (!joystick.active) return;
+      const rect = canvas.getBoundingClientRect();
+      joystick.currentX = (e.clientX - rect.left) * (canvas.width / rect.width);
+      joystick.currentY = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+      let dx = joystick.currentX - joystick.startX;
+      let dy = joystick.currentY - joystick.startY;
+      let dist = Math.sqrt(dx*dx + dy*dy);
+
+      keys.up = keys.down = keys.left = keys.right = false;
+
+      // 拖曳距離防誤觸 Deadzone
+      if (dist > 30) {
+        if (Math.abs(dx) > Math.abs(dy)) {
+          if (dx > 0) keys.right = true;
+          else keys.left = true;
+        } else {
+          if (dy > 0) keys.down = true;
+          else keys.up = true;
+        }
+      }
+    });
+
+    function stopJoystick(e) {
+      joystick.active = false;
+      keys.up = keys.down = keys.left = keys.right = false;
+      if (e.pointerId) canvas.releasePointerCapture(e.pointerId);
+    }
+
+    canvas.addEventListener('pointerup', stopJoystick);
+    canvas.addEventListener('pointercancel', stopJoystick);
+
+    // =========================================================================
+
+    function updatePhysics() {
+      if (gameState !== "playing") return;
+
+      if (visionTimer > 0) {
+        visionTimer--;
+        document.getElementById('vision-time').innerText = (visionTimer / 60).toFixed(1);
+        if (visionTimer === 0) {
+          document.getElementById('vision-timer-badge').classList.add('hidden');
+          logMessage("全知視野結束，迷霧再次降臨...", 'info');
+        }
+      }
+
+      let diffX = player.targetX - player.dx;
+      let diffY = player.targetY - player.dy;
+      let dist = Math.sqrt(diffX*diffX + diffY*diffY);
+
+      if (dist > 0.05) {
+        player.dx += diffX * player.speed;
+        player.dy += diffY * player.speed;
+      } else {
+        player.dx = player.targetX;
+        player.dy = player.targetY;
+        
+        let nx = player.x, ny = player.y;
+        if (keys.up) ny--;
+        else if (keys.down) ny++;
+        else if (keys.left) nx--;
+        else if (keys.right) nx++;
+
+        if (nx !== player.x || ny !== player.y) {
+          let tile = mapData[ny][nx];
+          if (tile === 0) return; 
+
+          if (tile === 4 || tile === 8) {
+            keys = { up: false, down: false, left: false, right: false }; 
+            joystick.active = false; 
+            openInteractionModal(nx, ny, tile);
+          } 
+          else {
+            player.x = nx; player.y = ny;
+            player.targetX = nx; player.targetY = ny;
+            
+            if (tile === 5) {
+              mapData[ny][nx] = 1;
+              if (hp < maxHp) { hp++; updateHearts(); logMessage("撿到補血寶箱！生命 +1 💖", 'success'); }
+              else logMessage("撿到補血寶箱，但生命已滿！", 'info');
+            }
+            else if (tile === 7) {
+              mapData[ny][nx] = 1;
+              visionTimer = 180; 
+              document.getElementById('vision-timer-badge').classList.remove('hidden');
+              logMessage("取得全知水晶！迷霧消散 3 秒 👁️", 'item');
+            }
+            else if (tile === 6) {
+              mapData[ny][nx] = 1;
+              logMessage("踏入魔法陣！時空扭曲 🌀", 'special');
+              keys = { up: false, down: false, left: false, right: false }; joystick.active = false;
+              setTimeout(levelComplete, 500);
+            }
+            else if (tile === 3) {
+              keys = { up: false, down: false, left: false, right: false }; joystick.active = false;
+              levelComplete();
+            }
+          }
+        }
+      }
+    }
+
+    function openInteractionModal(tx, ty, tileType) {
+      gameState = "question";
+      let qData;
+      
+      if (tileType === 4) qData = getQuestion();
+      else if (tileType === 8) qData = riddleBank[Math.floor(Math.random() * riddleBank.length)];
+      
+      activeObject = { x: tx, y: ty, type: tileType, correctIndex: qData.correctIndex };
+
+      const modal = document.getElementById('question-modal');
+      const box = document.getElementById('modal-box');
+      
+      if (tileType === 4) {
+        box.className = "bg-slate-800 border-4 border-amber-500 rounded-3xl p-5 md:p-8 w-full max-w-md shadow-[0_0_30px_rgba(245,158,11,0.4)]";
+        document.getElementById('modal-title').className = "text-xl md:text-2xl font-black text-amber-400 mb-2 glow-text";
+        document.getElementById('modal-title').innerHTML = `<i class="fa-solid fa-box-open"></i> ${qData.title}`;
+      } else {
+        box.className = "bg-slate-800 border-4 border-cyan-500 rounded-3xl p-5 md:p-8 w-full max-w-md shadow-[0_0_30px_rgba(6,182,212,0.4)]";
+        document.getElementById('modal-title').className = "text-xl md:text-2xl font-black text-cyan-400 mb-2 glow-text";
+        document.getElementById('modal-title').innerHTML = `<i class="fa-solid fa-monument"></i> ${qData.title}`;
+      }
+
+      document.getElementById('modal-desc').innerHTML = qData.desc;
+      const container = document.getElementById('question-choices');
+      container.innerHTML = '';
+      
+      qData.choices.forEach((choice, idx) => {
+        let btnColor = tileType === 4 ? 'border-amber-500/50 hover:bg-amber-700/50' : 'border-cyan-500/50 hover:bg-cyan-700/50';
+        container.innerHTML += `
+          <button onclick="answerInteraction(${idx})" class="bg-slate-700 ${btnColor} border-2 rounded-2xl p-5 transition shadow-lg transform hover:scale-105 active:scale-95 text-2xl md:text-3xl font-black text-white">
+            ${choice.html}
+          </button>
+        `;
+      });
+      modal.classList.remove('hidden');
+    }
+
+    window.answerInteraction = function(idx) {
+      document.getElementById('question-modal').classList.add('hidden');
+      gameState = "playing";
+
+      if (idx === activeObject.correctIndex) {
+        if (activeObject.type === 4) {
+          if (Math.random() < 0.08) { // 機率下調至 8%
+            mapData[activeObject.y][activeObject.x] = 6; 
+            logMessage("答對了！寶箱底下居然藏著傳送魔法陣 🌀", 'special');
+          } else {
+            mapData[activeObject.y][activeObject.x] = 1;
+            logMessage("答對了！寶箱通道已解鎖。", 'success');
+          }
+        } else if (activeObject.type === 8) {
+          mapData[activeObject.y][activeObject.x] = 1;
+          visionTimer = 180;
+          document.getElementById('vision-timer-badge').classList.remove('hidden');
+          logMessage("破解謎語！石碑釋放出全知之光 👁️", 'item');
+        }
+      } else {
+        hp--;
+        updateHearts();
+        logMessage(activeObject.type === 4 ? "答錯了！寶箱咬了你一口 💔" : "答錯了！石碑釋放了詛咒閃電 ⚡", 'danger');
+        
+        const wrapper = document.getElementById('maze-wrapper');
+        const flash = document.getElementById('damage-flash');
+        wrapper.classList.add('shake-effect');
+        flash.classList.remove('opacity-0');
+        setTimeout(() => { wrapper.classList.remove('shake-effect'); flash.classList.add('opacity-0'); }, 300);
+
+        if (hp <= 0) {
+          gameState = "gameover";
+          const modal = document.getElementById('game-over-modal');
+          document.getElementById('game-over-icon').innerText = "💀";
+          modal.classList.remove('hidden');
+        }
+      }
+    }
+
+    function levelComplete() {
+      const nextDiff = difficultyConfig[currentDifficulty].next;
+      if (nextDiff === 'victory') {
+        gameState = "victory";
+        const modal = document.getElementById('game-over-modal');
+        document.getElementById('game-over-icon').innerText = "🏆";
+        document.getElementById('game-over-title').innerText = "完全通關！";
+        document.getElementById('game-over-title').className = "text-3xl md:text-4xl font-black text-amber-400 mb-4 glow-text";
+        document.getElementById('game-over-desc').innerText = "恭喜你解開了所有難度，成為真正的分數大師！";
+        modal.classList.remove('hidden');
+        if (typeof confetti === 'function') confetti({ particleCount: 300, spread: 160, origin: { y: 0.5 } });
+      } else {
+        logMessage(`抵達出口！準備進入更深的迷宮...`, 'success');
+        setTimeout(() => startGame(nextDiff), 1000);
+      }
+    }
+
+    function drawGame() {
+      ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const time = Date.now();
+
+      // 畫地圖與物件
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const tile = mapData[y][x];
+          const px = x * tileSize, py = y * tileSize;
+
+          if (tile === 0) {
+            ctx.fillStyle = '#1e293b'; ctx.fillRect(px, py, tileSize, tileSize);
+            ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fillRect(px, py, tileSize, 4); 
+            ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(px, py+tileSize-4, tileSize, 4); 
+          } else {
+            ctx.fillStyle = '#334155'; ctx.fillRect(px, py, tileSize, tileSize);
+            ctx.fillStyle = '#475569'; ctx.fillRect(px + 2, py + 2, tileSize - 4, tileSize - 4);
+            
+            if (tile === 3) { 
+              ctx.fillStyle = '#10b981'; ctx.shadowColor = '#34d399'; ctx.shadowBlur = 15;
+              ctx.fillRect(px + tileSize*0.2, py + tileSize*0.2, tileSize*0.6, tileSize*0.6);
+              ctx.shadowBlur = 0;
+            } 
+            else if (tile === 4 || tile === 5) { 
+              ctx.fillStyle = tile === 4 ? '#d97706' : '#059669'; 
+              ctx.fillRect(px + tileSize*0.15, py + tileSize*0.25, tileSize*0.7, tileSize*0.6);
+              ctx.fillStyle = '#fcd34d'; 
+              ctx.fillRect(px + tileSize*0.15, py + tileSize*0.35, tileSize*0.7, tileSize*0.1);
+              ctx.fillStyle = '#fff'; ctx.font = `900 ${tileSize*0.3}px sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+              ctx.fillText(tile === 4 ? "?" : "♥", px + tileSize/2, py + tileSize*0.55);
+            } 
+            else if (tile === 6) { 
+              ctx.save();
+              ctx.translate(px + tileSize/2, py + tileSize/2);
+              ctx.rotate(time / 800); 
+              ctx.strokeStyle = '#c084fc'; ctx.shadowColor = '#e879f9'; ctx.shadowBlur = 10; ctx.lineWidth = 2;
+              
+              ctx.beginPath(); ctx.arc(0, 0, tileSize*0.35, 0, Math.PI*2); ctx.stroke(); 
+              ctx.beginPath();
+              for(let i=0; i<3; i++) { ctx.lineTo(Math.cos(i*Math.PI*2/3 - Math.PI/2)*tileSize*0.35, Math.sin(i*Math.PI*2/3 - Math.PI/2)*tileSize*0.35); }
+              ctx.closePath(); ctx.stroke();
+              ctx.beginPath();
+              for(let i=0; i<3; i++) { ctx.lineTo(Math.cos(i*Math.PI*2/3 + Math.PI/2)*tileSize*0.35, Math.sin(i*Math.PI*2/3 + Math.PI/2)*tileSize*0.35); }
+              ctx.closePath(); ctx.stroke();
+              ctx.restore();
+            }
+            else if (tile === 7) { 
+              let floatY = Math.sin(time / 200) * (tileSize * 0.1);
+              ctx.fillStyle = '#22d3ee'; ctx.shadowColor = '#67e8f9'; ctx.shadowBlur = 15;
+              ctx.beginPath();
+              ctx.moveTo(px + tileSize/2, py + tileSize*0.2 + floatY);
+              ctx.lineTo(px + tileSize*0.7, py + tileSize/2 + floatY);
+              ctx.lineTo(px + tileSize/2, py + tileSize*0.8 + floatY);
+              ctx.lineTo(px + tileSize*0.3, py + tileSize/2 + floatY);
+              ctx.closePath(); ctx.fill();
+              ctx.shadowBlur = 0;
+            }
+            else if (tile === 8) {
+              ctx.fillStyle = '#94a3b8'; 
+              ctx.fillRect(px + tileSize*0.25, py + tileSize*0.1, tileSize*0.5, tileSize*0.8);
+              ctx.fillStyle = '#cbd5e1'; 
+              ctx.beginPath(); ctx.moveTo(px + tileSize*0.25, py + tileSize*0.1); ctx.lineTo(px + tileSize*0.5, py); ctx.lineTo(px + tileSize*0.75, py + tileSize*0.1); ctx.fill();
+              let pulse = Math.abs(Math.sin(time / 400));
+              ctx.fillStyle = `rgba(6, 182, 212, ${0.5 + pulse*0.5})`; ctx.shadowColor = '#22d3ee'; ctx.shadowBlur = 10;
+              ctx.font = `900 ${tileSize*0.4}px sans-serif`; ctx.fillText("?", px + tileSize/2, py + tileSize*0.45);
+              ctx.shadowBlur = 0;
+            }
+          }
+        }
+      }
+
+      ctx.fillStyle = '#3b82f6'; ctx.fillRect(1 * tileSize + tileSize*0.2, 1 * tileSize + tileSize*0.2, tileSize*0.6, tileSize*0.6);
+
+      const cx = player.dx * tileSize + tileSize/2;
+      const cy = player.dy * tileSize + tileSize/2;
+      ctx.fillStyle = '#34d399'; ctx.shadowColor = '#6ee7b7'; ctx.shadowBlur = 15;
+      ctx.beginPath(); ctx.arc(cx, cy, Math.max(tileSize*0.3, 4), 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // --- ★ 完美無破圖的迷霧系統 ★ ---
+      if (visionTimer === 0) { 
+        const sightTiles = difficultyConfig[currentDifficulty].sight;
+        const radius = tileSize * sightTiles;
+        
+        let visiblePoints = [];
+        const numRays = 180;
+        for (let i = 0; i < numRays; i++) {
+          let angle = (i * 2 * Math.PI) / numRays;
+          let dx = Math.cos(angle), dy = Math.sin(angle);
+          let rx = cx, ry = cy;
+          let distance = 0, hitWall = false;
+          const stepSize = Math.max(tileSize / 4, 2);
+
+          while (distance < radius && !hitWall) {
+            rx += dx * stepSize; ry += dy * stepSize; distance += stepSize;
+            let gridX = Math.floor(rx / tileSize), gridY = Math.floor(ry / tileSize);
+            if (gridX < 0 || gridX >= cols || gridY < 0 || gridY >= rows || mapData[gridY][gridX] === 0) hitWall = true;
+          }
+          visiblePoints.push({ x: rx, y: ry });
+        }
+
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.96)';
+        ctx.beginPath(); 
+        
+        ctx.rect(0, 0, canvas.width, canvas.height); 
+        
+        if (visiblePoints.length > 0) {
+          ctx.moveTo(visiblePoints[0].x, visiblePoints[0].y);
+          for (let i = 1; i < visiblePoints.length; i++) {
+            ctx.lineTo(visiblePoints[i].x, visiblePoints[i].y);
+          }
+        }
+        ctx.closePath(); 
+        ctx.fill('evenodd'); 
+
+        const grad = ctx.createRadialGradient(cx, cy, radius * 0.3, cx, cy, radius);
+        grad.addColorStop(0, 'rgba(0,0,0,0)'); grad.addColorStop(1, 'rgba(0,0,0,0.96)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        for (let i = 0; i < visiblePoints.length; i++) {
+          ctx.lineTo(visiblePoints[i].x, visiblePoints[i].y);
+        }
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // --- ★ 繪製虛擬隱藏搖桿 UI ★ ---
+      if (joystick.active) {
+        ctx.beginPath();
+        ctx.arc(joystick.startX, joystick.startY, 50, 0, Math.PI*2);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        let dx = joystick.currentX - joystick.startX;
+        let dy = joystick.currentY - joystick.startY;
+        let dist = Math.min(Math.sqrt(dx*dx + dy*dy), 50);
+        let angle = Math.atan2(dy, dx);
+        
+        let knobX = joystick.startX + Math.cos(angle) * dist;
+        let knobY = joystick.startY + Math.sin(angle) * dist;
+
+        ctx.beginPath();
+        ctx.arc(knobX, knobY, 25, 0, Math.PI*2);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.fill();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 10;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    }
+
+    function gameLoop() {
+      updatePhysics();
+      drawGame();
+      animationId = requestAnimationFrame(gameLoop);
+    }
+    
+    window.addEventListener('DOMContentLoaded', () => {
+      updateDivideLab();
+      renderExpandLab();
+      loadReduceChallenge(6, 18);
+      renderTongfenVisual();
+    });
+  </script>
+</body>
+</html>

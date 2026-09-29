@@ -68,7 +68,7 @@
     <main id="mainContent">
         <section id="tab1" class="tab-content active">
             <h2>5-1 多邊形測量與比較</h2>
-            <p><strong>正多邊形：</strong>每條邊都一樣長，每個角都一樣大。請拖曳畫面上的直尺進行測量比較[cite: 2]。</p>
+            <p><strong>正多邊形：</strong>每條邊都一樣長，每個角都一樣大。請拖曳畫面上的直尺進行測量比較。</p>
             <div class="controls">
                 <label>選擇邊數：<span id="staticSidesLabel">5 邊形</span></label>
                 <input type="range" id="staticPolygonSides" min="3" max="8" value="5" oninput="drawStaticPolygons()">
@@ -104,7 +104,7 @@
 
         <section id="tab2" class="tab-content">
             <h2>5-2 三角形邊長關係</h2>
-            <p>任意兩邊長的和，必須大於第三邊[cite: 1]。</p>
+            <p>任意兩邊長的和，必須大於第三邊。</p>
             <div class="controls">
                 <label style="color:#e74c3c">左邊長: <span id="valA">6</span></label>
                 <input type="range" id="sliderA" min="1" max="20" value="6" oninput="updateTriangle()">
@@ -119,7 +119,7 @@
 
         <section id="tab3" class="tab-content">
             <h2>5-3 內角和手動拼湊實驗</h2>
-            <p>三個角一開始在三角形上，請<strong>拖曳它們</strong>到下方【綠色中心點】，然後利用上方的【旋轉控制桿】自由旋轉拼合，看看是否形成 180 度平角[cite: 3]。</p>
+            <p>三個角一開始在三角形上，請<strong>拖曳它們</strong>到下方【綠色中心點】，然後利用上方的【旋轉控制桿】自由旋轉拼合，看看是否形成 180 度平角。</p>
             <div class="controls">
                 <button class="btn" style="background:#95a5a6;" onclick="initManualAngleProof()">🔄 重新放回</button>
             </div>
@@ -129,7 +129,7 @@
 
         <section id="tab4" class="tab-content">
             <h2>5-4 扇形繪圖分解</h2>
-            <p>扇形是由兩條半徑和一段圓弧所圍成的圖形[cite: 5]。</p>
+            <p>扇形是由兩條半徑和一段圓弧所圍成的圖形。</p>
             <div class="controls">
                 <label>設定圓心角：<span id="sectorAngleVal">120</span>°</label>
                 <input type="range" id="sliderSector" min="10" max="360" value="120" oninput="resetSectorDrawing()">
@@ -424,11 +424,11 @@
                 const topX = baseX + A * Math.cos(angleA), topY = baseY - A * Math.sin(angleA);
                 ctx.strokeStyle = '#e74c3c'; ctx.beginPath(); ctx.moveTo(baseX, baseY); ctx.lineTo(topX, topY); ctx.stroke();
                 ctx.strokeStyle = '#3498db'; ctx.beginPath(); ctx.moveTo(baseX + C, baseY); ctx.lineTo(topX, topY); ctx.stroke();
-                resDiv.style.color = '#27ae60'; resDiv.innerHTML = `✅ ${sorted[0]} + ${sorted[1]} > ${sorted[2]}，成功組合！[cite: 1]`;
+                resDiv.style.color = '#27ae60'; resDiv.innerHTML = `✅ ${sorted[0]} + ${sorted[1]} > ${sorted[2]}，成功組合！`;
             } else {
                 ctx.strokeStyle = '#e74c3c'; ctx.beginPath(); ctx.moveTo(baseX, baseY); ctx.lineTo(baseX + A, baseY - 5); ctx.stroke();
                 ctx.strokeStyle = '#3498db'; ctx.beginPath(); ctx.moveTo(baseX + C, baseY); ctx.lineTo(baseX + C - B, baseY - 5); ctx.stroke();
-                resDiv.style.color = '#e74c3c'; resDiv.innerHTML = `❌ 無法閉合！[cite: 1]`;
+                resDiv.style.color = '#e74c3c'; resDiv.innerHTML = `❌ 無法閉合！`;
             }
         }
 
@@ -593,10 +593,10 @@
             if(currentSectorStep < 4) {
                 currentSectorStep++;
                 const desc = document.getElementById('sectorDesc');
-                if(currentSectorStep === 1) desc.innerHTML = "📝 步驟 1：畫出一條直線作為扇形的起始【半徑】[cite: 7]。";
-                if(currentSectorStep === 2) desc.innerHTML = "📏 步驟 2：以頂點為圓心，畫出一段適當長度的【圓弧】[cite: 7]。";
-                if(currentSectorStep === 3) desc.innerHTML = "📐 步驟 3：使用【量角器】測量指定的圓心角，並做記號[cite: 7]！";
-                if(currentSectorStep === 4) desc.innerHTML = "📝 步驟 4：使用直尺將圓心與記號連線，完成扇形[cite: 7]！";
+                if(currentSectorStep === 1) desc.innerHTML = "📝 步驟 1：畫出一條直線作為扇形的起始【半徑】。";
+                if(currentSectorStep === 2) desc.innerHTML = "📏 步驟 2：以頂點為圓心，畫出一段適當長度的【圓弧】。";
+                if(currentSectorStep === 3) desc.innerHTML = "📐 步驟 3：使用【量角器】測量指定的圓心角，並做記號！";
+                if(currentSectorStep === 4) desc.innerHTML = "📝 步驟 4：使用直尺將圓心與記號連線，完成扇形！";
                 
                 isSectorAnimating = true; sectorAnimProgress = 0;
                 document.getElementById('btnNextSector').disabled = true; 

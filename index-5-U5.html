@@ -55,6 +55,9 @@
         .zoom-controls { position: absolute; bottom: 15px; right: 15px; z-index: 10; display: flex; flex-direction: column; gap: 10px; }
         .zoom-btn { width: 45px; height: 45px; border-radius: 50%; background: #34495e; color: white; border: none; font-size: 20px; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.3); transition: all 0.2s; }
         .zoom-btn:hover { background: #2c3e50; transform: scale(1.05); }
+
+        /* 刪除圖形按鈕 */
+        .delete-btn-container { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); z-index: 10; }
     </style>
 </head>
 <body>
@@ -97,9 +100,14 @@
                     <canvas class="drag-item" id="btn-poly-6" width="70" height="70" onclick="addShapeToGame(6)"></canvas>
                 </div>
                 <div id="gameCanvasContainer">
+                    <!-- 作者姓名與傳送按鈕 -->
                     <div class="share-container">
                         <input type="text" id="studentId" class="id-input" placeholder="輸入姓名 / ID" oninput="renderGame()">
                         <button class="btn" onclick="shareDesign()" style="background: #9b59b6; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">📤 傳送作品</button>
+                    </div>
+                    <!-- 刪除選取圖形按鈕 (動態顯示) -->
+                    <div class="delete-btn-container">
+                        <button id="deleteShapeBtn" class="btn" style="background: #e74c3c; display: none; box-shadow: 0 4px 8px rgba(0,0,0,0.3); padding: 10px 20px; font-size: 16px;" onclick="deleteSelectedShape()">🗑️ 刪除圖形</button>
                     </div>
                     <!-- 縮放按鈕 -->
                     <div class="zoom-controls">
@@ -304,6 +312,25 @@
             renderGame();
         }
 
+        function deleteSelectedShape() {
+            if (selectedShape) {
+                gameShapes = gameShapes.filter(s => s !== selectedShape);
+                selectedShape = null;
+                isDraggingShape = false;
+                isRotatingShape = false;
+                renderGame();
+            }
+        }
+
+        // 鍵盤快捷鍵：Delete 或 Backspace 刪除圖形
+        window.addEventListener('keydown', (e) => {
+            if ((e.key === 'Delete' || e.key === 'Backspace') && selectedShape && document.getElementById('tab1-game').classList.contains('active')) {
+                // 如果焦點在輸入框內，不要觸發刪除圖形
+                if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+                deleteSelectedShape();
+            }
+        });
+
         function renderGame() {
             gCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
             gCtx.save();
@@ -352,6 +379,12 @@
                 gCtx.fillText(`作者: ${studentId}`, 20, 38);
                 gCtx.restore();
             }
+
+            // 更新刪除按鈕狀態
+            const delBtn = document.getElementById('deleteShapeBtn');
+            if (delBtn) {
+                delBtn.style.display = selectedShape ? 'block' : 'none';
+            }
         }
 
         function getMouseWorld(x, y) {
@@ -396,6 +429,9 @@
         }
 
         function handleGameDown(e) {
+            // 如果點擊到輸入框等UI，就不干涉畫布
+            if(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON')) return;
+
             if (e.touches && e.touches.length === 2) {
                 initialPinchDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
                 isDraggingShape = false; isPanning = false; isRotatingShape = false;
@@ -469,15 +505,21 @@
 
         // 升級版：直接截圖分享圖片
         async function shareDesign() {
-            // 確保姓名被畫上去
+            renderGame();
+            // 先隱藏選取框再截圖
+            const tempSelected = selectedShape;
+            selectedShape = null;
             renderGame();
             
             gameCanvas.toBlob(async (blob) => {
+                // 恢復選取框
+                selectedShape = tempSelected;
+                renderGame();
+
                 if (!blob) { alert('無法產生圖片！'); return; }
                 
                 const file = new File([blob], '我的幾何畫作.png', { type: 'image/png' });
                 
-                // 檢查瀏覽器是否支援直接分享檔案
                 if (navigator.canShare && navigator.canShare({ files: [file] })) {
                     try {
                         await navigator.share({
@@ -489,7 +531,6 @@
                         console.log("分享已取消或發生錯誤：", err);
                     }
                 } else {
-                    // 若不支援檔案分享，直接觸發下載
                     const link = document.createElement('a');
                     link.download = '我的幾何畫作.png';
                     link.href = URL.createObjectURL(blob);

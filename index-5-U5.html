@@ -14,7 +14,6 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; font-weight: bold; }
         body { background: var(--bg-gradient); color: #333; display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; user-select: none; -webkit-user-select: none; }
         
-        /* 導覽列與標題合併設計 */
         nav { display: flex; align-items: center; background: linear-gradient(90deg, #357abd, #4a90e2); padding: 0 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); z-index: 10; flex-wrap: wrap; }
         .nav-title { color: white; font-size: 1.3rem; font-weight: bold; letter-spacing: 1px; margin-right: auto; padding: 10px 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
         .nav-tabs { display: flex; flex-wrap: wrap; }
@@ -49,6 +48,11 @@
         #shareBtn { position: absolute; top: 10px; right: 10px; z-index: 10; background: #9b59b6; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
         
         .step-desc { background: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; font-size: 16px; font-weight: bold; text-align: center; border: 1px solid #ffeeba; min-height: 48px;}
+        
+        /* 縮放懸浮按鈕樣式 */
+        .zoom-controls { position: absolute; bottom: 15px; right: 15px; z-index: 10; display: flex; flex-direction: column; gap: 10px; }
+        .zoom-btn { width: 45px; height: 45px; border-radius: 50%; background: #34495e; color: white; border: none; font-size: 20px; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.3); transition: all 0.2s; }
+        .zoom-btn:hover { background: #2c3e50; transform: scale(1.05); }
     </style>
 </head>
 <body>
@@ -92,12 +96,17 @@
                 </div>
                 <div id="gameCanvasContainer">
                     <button class="btn" id="shareBtn" onclick="shareDesign()">📤 AirDrop / 分享</button>
+                    <!-- 新增的畫布縮放按鈕 -->
+                    <div class="zoom-controls">
+                        <button class="zoom-btn" onclick="zoomGameCanvas(1.2)">➕</button>
+                        <button class="zoom-btn" onclick="zoomGameCanvas(0.8)">➖</button>
+                    </div>
                     <canvas id="gameCanvas" width="850" height="550"></canvas>
                     <div class="game-hint">
-                        💡 <b>選取圖形</b>：點擊圖形，拖曳上方「控制桿」可自由旋轉！<br>
+                        💡 <b>選取圖形</b>：點擊圖形，拖曳上方「控制桿」可旋轉！<br>
                         👉 <b>拖曳圖形</b>：靠近邊緣會自動對齊吸附。<br>
                         👉 <b>拖曳背景</b>：平移畫布 (滑鼠右鍵/單指滑動)。<br>
-                        👉 <b>滾輪縮放</b>：放大縮小畫布。
+                        👉 <b>縮放畫布</b>：雙指縮放，或使用右下角按鈕。
                     </div>
                 </div>
             </div>
@@ -253,13 +262,19 @@
         canvasStatic.addEventListener('mousedown', handleStaticDown); canvasStatic.addEventListener('mousemove', handleStaticMove); canvasStatic.addEventListener('mouseup', handleStaticUp);
         canvasStatic.addEventListener('touchstart', handleStaticDown, {passive: false}); canvasStatic.addEventListener('touchmove', handleStaticMove, {passive: false}); canvasStatic.addEventListener('touchend', handleStaticUp);
 
-        // --- 5-1 無限畫布遊戲 (PPT 旋轉控制桿) ---
+        // --- 5-1 無限畫布遊戲 ---
         const gameCanvas = document.getElementById('gameCanvas');
         const gCtx = gameCanvas.getContext('2d');
         let gameShapes = [], camera = { x: 0, y: 0, zoom: 1 };
         let selectedShape = null, isDraggingShape = false, isRotatingShape = false;
         let isPanning = false, lastMouse = { x: 0, y: 0 };
+        let initialPinchDistance = null; // 用於儲存雙指初始距離
         const SHAPE_SIDE_LEN = 60; 
+
+        function zoomGameCanvas(factor) {
+            camera.zoom = Math.max(0.4, Math.min(camera.zoom * factor, 3));
+            renderGame();
+        }
 
         function drawSidebarIcons() {
             [3,4,5,6].forEach(sides => {
@@ -362,6 +377,13 @@
         }
 
         function handleGameDown(e) {
+            // 雙指縮放處理
+            if (e.touches && e.touches.length === 2) {
+                initialPinchDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                isDraggingShape = false; isPanning = false; isRotatingShape = false;
+                return;
+            }
+
             const {x, y, isTouch} = getEventPos(e, gameCanvas);
             const {wx, wy} = getMouseWorld(x, y);
             if(e.cancelable && isTouch) e.preventDefault(); 
@@ -393,6 +415,16 @@
         }
 
         function handleGameMove(e) {
+            // 雙指縮放處理
+            if (e.touches && e.touches.length === 2 && initialPinchDistance !== null) {
+                if(e.cancelable) e.preventDefault();
+                let currentDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                camera.zoom = Math.max(0.4, Math.min(camera.zoom * (currentDist / initialPinchDistance), 3));
+                initialPinchDistance = currentDist;
+                renderGame();
+                return;
+            }
+
             const {x, y} = getEventPos(e, gameCanvas);
             const {wx, wy} = getMouseWorld(x, y);
             
@@ -407,7 +439,8 @@
             }
         }
 
-        function handleGameUp() {
+        function handleGameUp(e) {
+            if (e.touches && e.touches.length < 2) initialPinchDistance = null;
             if(isDraggingShape && selectedShape) snapEdges(selectedShape);
             isDraggingShape = false; isRotatingShape = false; isPanning = false; renderGame();
         }

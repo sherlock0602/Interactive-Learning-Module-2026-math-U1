@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>五年級數學：多邊形與扇形 旗艦教學版</title>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --secondary: #ff7675;
+            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+            --glass-bg: rgba(255, 255, 255, 0.95);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; user-select: none; touch-action: none; }
+        body { background: var(--bg-gradient); color: #333; display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; }
+        header { background: linear-gradient(90deg, #4a90e2, #63a4ff); color: white; padding: 1rem; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { font-size: 1.5rem; letter-spacing: 2px; }
+        
+        nav { display: flex; justify-content: center; background-color: #357abd; flex-wrap: wrap; z-index: 10;}
+        nav button { background: none; border: none; color: rgba(255,255,255,0.8); padding: 12px 20px; font-size: 15px; cursor: pointer; transition: all 0.3s; position: relative; }
+        nav button:hover { color: white; background: rgba(255,255,255,0.1); }
+        nav button.active { color: white; font-weight: bold; background: #2c3e50; }
+        nav button.active::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; background: #ffeb3b; }
+
+        main { flex: 1; max-width: 1000px; width: 100%; margin: 20px auto; padding: 20px; background: var(--glass-bg); border-radius: 10px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+        .tab-content { display: none; animation: fadeIn 0.4s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        h2 { color: #2c3e50; border-bottom: 3px solid var(--primary); padding-bottom: 8px; margin-bottom: 15px; display: inline-block; }
+        p { line-height: 1.6; margin-bottom: 10px; }
+        
+        canvas { display: block; margin: 15px auto; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); background: white; }
+        
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: center; margin-top: 15px; background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #eee; }
+        .btn { background: #3498db; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold; transition: background 0.2s; }
+        .btn:hover { background: #2980b9; }
+        .btn-success { background: #27ae60; }
+        .btn-success:hover { background: #219150; }
+        input[type="range"] { width: 130px; }
+
+        /* 5-1 遊戲專用 */
+        #game-layout { display: flex; gap: 10px; height: 550px; position: relative; }
+        #sidebar { width: 100px; background: #fff; border-radius: 8px; padding: 10px; border: 1px solid #ddd; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+        .drag-item { width: 70px; height: 70px; cursor: pointer; transition: transform 0.2s; }
+        .drag-item:hover { transform: scale(1.1); }
+        #gameCanvasContainer { flex: 1; position: relative; border-radius: 8px; overflow: hidden; border: 2px dashed #bdc3c7; background: #fafafa; }
+        .game-hint { position: absolute; bottom: 10px; left: 10px; font-size: 13px; color: #7f8c8d; pointer-events: none; background: rgba(255,255,255,0.9); padding: 5px 10px; border-radius: 4px; z-index: 5;}
+        #shareBtn { position: absolute; top: 10px; right: 10px; z-index: 10; background: #9b59b6; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        
+        .step-desc { background: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; font-size: 16px; font-weight: bold; text-align: center; border: 1px solid #ffeeba; min-height: 48px;}
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>📐 5年級數學：多邊形與扇形 教學版</h1>
+    </header>
+
+    <nav>
+        <button class="nav-btn active" onclick="switchTab('tab1')">5-1 測量與比較</button>
+        <button class="nav-btn" onclick="switchTab('tab1-game')">🎮 5-1 無限畫布</button>
+        <button class="nav-btn" onclick="switchTab('tab2')">5-2 邊長實作</button>
+        <button class="nav-btn" onclick="switchTab('tab3')">5-3 內角和實驗</button>
+        <button class="nav-btn" onclick="switchTab('tab4')">5-4 步驟化繪圖</button>
+    </nav>
+
+    <main id="mainContent">
+        <section id="tab1" class="tab-content active">
+            <h2>5-1 多邊形測量與比較</h2>
+            <p><strong>正多邊形：</strong>每條邊都一樣長，每個角都一樣大。請拖曳畫面上的直尺進行測量比較[cite: 2]。</p>
+            <div class="controls">
+                <label>選擇邊數：<span id="staticSidesLabel">5 邊形</span></label>
+                <input type="range" id="staticPolygonSides" min="3" max="8" value="5" oninput="drawStaticPolygons()">
+                <button class="btn" onclick="rotateRuler()">🔄 旋轉直尺</button>
+            </div>
+            <canvas id="canvasStatic" width="800" height="400" style="cursor: grab;"></canvas>
+        </section>
+
+        <section id="tab1-game" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                <h2>🎮 幾何無邊際創作畫布</h2>
+            </div>
+            <div id="game-layout">
+                <div id="sidebar">
+                    <p style="font-size: 13px; font-weight: bold;">點擊新增</p>
+                    <canvas class="drag-item" id="btn-poly-3" width="70" height="70" onclick="addShapeToGame(3)"></canvas>
+                    <canvas class="drag-item" id="btn-poly-4" width="70" height="70" onclick="addShapeToGame(4)"></canvas>
+                    <canvas class="drag-item" id="btn-poly-5" width="70" height="70" onclick="addShapeToGame(5)"></canvas>
+                    <canvas class="drag-item" id="btn-poly-6" width="70" height="70" onclick="addShapeToGame(6)"></canvas>
+                </div>
+                <div id="gameCanvasContainer">
+                    <button class="btn" id="shareBtn" onclick="shareDesign()">📤 AirDrop / 分享</button>
+                    <canvas id="gameCanvas" width="850" height="550"></canvas>
+                    <div class="game-hint">
+                        💡 <b>選取圖形</b>：點擊圖形，拖曳上方「控制桿」可自由旋轉！<br>
+                        👉 <b>拖曳圖形</b>：靠近邊緣會自動對齊吸附。<br>
+                        👉 <b>拖曳背景</b>：平移畫布 (滑鼠右鍵/單指滑動)。<br>
+                        👉 <b>滾輪縮放</b>：放大縮小畫布。
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab2" class="tab-content">
+            <h2>5-2 三角形邊長關係</h2>
+            <p>任意兩邊長的和，必須大於第三邊[cite: 1]。</p>
+            <div class="controls">
+                <label style="color:#e74c3c">左邊長: <span id="valA">6</span></label>
+                <input type="range" id="sliderA" min="1" max="20" value="6" oninput="updateTriangle()">
+                <label style="color:#3498db">右邊長: <span id="valB">8</span></label>
+                <input type="range" id="sliderB" min="1" max="20" value="8" oninput="updateTriangle()">
+                <label style="color:#2ecc71">底邊長: <span id="valC">14</span></label>
+                <input type="range" id="sliderC" min="1" max="20" value="14" oninput="updateTriangle()">
+            </div>
+            <canvas id="canvasTriangle" width="700" height="350"></canvas>
+            <div id="triangleResult" style="text-align: center; font-size: 1.2rem; font-weight: bold; margin-top: 10px;"></div>
+        </section>
+
+        <section id="tab3" class="tab-content">
+            <h2>5-3 內角和手動拼湊實驗</h2>
+            <p>三個角一開始在三角形上，請<strong>拖曳它們</strong>到下方【綠色中心點】，然後利用上方的【旋轉控制桿】自由旋轉拼合，看看是否形成 180 度平角[cite: 3]。</p>
+            <div class="controls">
+                <button class="btn" style="background:#95a5a6;" onclick="initManualAngleProof()">🔄 重新放回</button>
+            </div>
+            <canvas id="canvasManualProof" width="700" height="450" style="cursor: grab; border: 1px solid #ccc;"></canvas>
+            <p style="text-align: center; font-size: 14px; color: #666;">(💡 技巧：點選角後會出現控制桿，轉動時會智慧磁吸完美貼合喔！)</p>
+        </section>
+
+        <section id="tab4" class="tab-content">
+            <h2>5-4 扇形繪圖分解</h2>
+            <p>扇形是由兩條半徑和一段圓弧所圍成的圖形[cite: 5]。</p>
+            <div class="controls">
+                <label>設定圓心角：<span id="sectorAngleVal">120</span>°</label>
+                <input type="range" id="sliderSector" min="10" max="360" value="120" oninput="resetSectorDrawing()">
+                <button class="btn btn-success" id="btnNextSector" onclick="nextSectorStep()">⏭️ 下一步</button>
+                <button class="btn" style="background:#95a5a6;" onclick="resetSectorDrawing()">🔄 重置</button>
+            </div>
+            <div id="sectorDesc" class="step-desc">請調整圓心角，並點擊「下一步」開始繪製。</div>
+            <canvas id="canvasSector" width="700" height="400"></canvas>
+        </section>
+    </main>
+
+    <script>
+        function getEventPos(e, canvas) {
+            const rect = canvas.getBoundingClientRect();
+            if (e.touches && e.touches.length > 0) {
+                return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top, isTouch: true };
+            }
+            return { x: e.clientX - rect.left, y: e.clientY - rect.top, isTouch: false };
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.currentTarget.classList.add('active');
+            
+            if(tabId === 'tab1') initStaticPolygons();
+            if(tabId === 'tab1-game') { setTimeout(drawSidebarIcons, 50); initGameCanvas(); }
+            if(tabId === 'tab2') updateTriangle();
+            if(tabId === 'tab3') initManualAngleProof();
+            if(tabId === 'tab4') resetSectorDrawing();
+        }
+
+        // --- 5-1 靜態測量 ---
+        let ruler = { x: 400, y: 320, width: 300, height: 40, angle: 0, isDragging: false };
+        const canvasStatic = document.getElementById('canvasStatic');
+        const ctxStatic = canvasStatic.getContext('2d');
+        let dragOffset = { x: 0, y: 0 };
+
+        function initStaticPolygons() { drawStaticPolygons(); }
+        function drawStaticPolygons() {
+            const sides = parseInt(document.getElementById('staticPolygonSides').value);
+            document.getElementById('staticSidesLabel').innerText = `${sides} 邊形`;
+            ctxStatic.clearRect(0, 0, canvasStatic.width, canvasStatic.height);
+            ctxStatic.fillStyle = "#2c3e50"; ctxStatic.font = "20px Arial";
+            ctxStatic.fillText("正多邊形", 150, 40);
+            drawPolygonShape(ctxStatic, 200, 200, sides, 100, true);
+            ctxStatic.fillText("非正多邊形", 550, 40);
+            drawPolygonShape(ctxStatic, 600, 200, sides, 100, false);
+            drawRuler();
+        }
+        function drawPolygonShape(ctx, cx, cy, sides, r, isRegular) {
+            ctx.beginPath();
+            for (let i = 0; i < sides; i++) {
+                const angle = (i * 2 * Math.PI / sides) - Math.PI / 2;
+                let currentR = isRegular ? r : r * (0.6 + ((i * 17) % 10) / 10); 
+                const x = cx + currentR * Math.cos(angle);
+                const y = cy + currentR * Math.sin(angle);
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fillStyle = isRegular ? '#dff9fb' : '#fcedda'; ctx.fill();
+            ctx.lineWidth = 3; ctx.strokeStyle = isRegular ? '#22a6b3' : '#f39c12'; ctx.stroke();
+        }
+        function drawRuler() {
+            ctxStatic.save(); ctxStatic.translate(ruler.x, ruler.y); ctxStatic.rotate(ruler.angle);
+            ctxStatic.fillStyle = 'rgba(255, 234, 167, 0.7)'; ctxStatic.fillRect(-ruler.width/2, -ruler.height/2, ruler.width, ruler.height);
+            ctxStatic.strokeStyle = '#d63031'; ctxStatic.lineWidth = 2; ctxStatic.strokeRect(-ruler.width/2, -ruler.height/2, ruler.width, ruler.height);
+            ctxStatic.fillStyle = '#2d3436';
+            for(let i=0; i<=15; i++) {
+                let px = -ruler.width/2 + i * 20;
+                ctxStatic.beginPath(); ctxStatic.moveTo(px, -ruler.height/2); ctxStatic.lineTo(px, -ruler.height/2 + (i%5===0 ? 15 : 8)); ctxStatic.stroke();
+                if(i%5===0) { ctxStatic.font = "12px Arial"; ctxStatic.fillText(i, px - 4, -ruler.height/2 + 28); }
+            }
+            ctxStatic.restore();
+        }
+        function rotateRuler() { ruler.angle += Math.PI / 12; drawStaticPolygons(); }
+        function handleStaticDown(e) {
+            const {x, y} = getEventPos(e, canvasStatic);
+            let dx = x - ruler.x, dy = y - ruler.y;
+            let rotX = dx * Math.cos(-ruler.angle) - dy * Math.sin(-ruler.angle);
+            let rotY = dx * Math.sin(-ruler.angle) + dy * Math.cos(-ruler.angle);
+            if (rotX >= -ruler.width/2 && rotX <= ruler.width/2 && rotY >= -ruler.height/2 && rotY <= ruler.height/2) {
+                ruler.isDragging = true; dragOffset = { x: x - ruler.x, y: y - ruler.y };
+            }
+        }
+        function handleStaticMove(e) {
+            if (ruler.isDragging) {
+                const {x, y} = getEventPos(e, canvasStatic);
+                ruler.x = x - dragOffset.x; ruler.y = y - dragOffset.y; drawStaticPolygons();
+            }
+        }
+        function handleStaticUp() { ruler.isDragging = false; }
+        canvasStatic.addEventListener('mousedown', handleStaticDown); canvasStatic.addEventListener('mousemove', handleStaticMove); canvasStatic.addEventListener('mouseup', handleStaticUp);
+        canvasStatic.addEventListener('touchstart', handleStaticDown, {passive: false}); canvasStatic.addEventListener('touchmove', handleStaticMove, {passive: false}); canvasStatic.addEventListener('touchend', handleStaticUp);
+
+        // --- 5-1 無限畫布遊戲 (PPT 旋轉控制桿) ---
+        const gameCanvas = document.getElementById('gameCanvas');
+        const gCtx = gameCanvas.getContext('2d');
+        let gameShapes = [], camera = { x: 0, y: 0, zoom: 1 };
+        let selectedShape = null, isDraggingShape = false, isRotatingShape = false;
+        let isPanning = false, lastMouse = { x: 0, y: 0 };
+        const SHAPE_SIDE_LEN = 60; 
+
+        function drawSidebarIcons() {
+            [3,4,5,6].forEach(sides => {
+                const c = document.getElementById(`btn-poly-${sides}`);
+                if(!c) return;
+                const ctx = c.getContext('2d');
+                ctx.clearRect(0,0,70,70);
+                ctx.beginPath();
+                for(let i=0; i<sides; i++){
+                    const a = (i * 2 * Math.PI / sides) - Math.PI / 2;
+                    ctx.lineTo(35 + 25*Math.cos(a), 35 + 25*Math.sin(a));
+                }
+                ctx.closePath();
+                ctx.fillStyle = `hsl(${sides*45}, 70%, 65%)`; ctx.fill(); ctx.stroke();
+            });
+        }
+
+        function addShapeToGame(sides) {
+            const r = (SHAPE_SIDE_LEN / 2) / Math.sin(Math.PI / sides);
+            gameShapes.push({ sides: sides, r: r, x: gameCanvas.width/2 - camera.x, y: gameCanvas.height/2 - camera.y, angle: 0, color: `hsla(${sides*45}, 70%, 65%, 0.85)` });
+            selectedShape = gameShapes[gameShapes.length - 1];
+            renderGame();
+        }
+
+        function renderGame() {
+            gCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+            gCtx.save();
+            gCtx.strokeStyle = '#e0e0e0'; gCtx.lineWidth = 1;
+            const gridSize = 40 * camera.zoom;
+            const offsetX = (camera.x * camera.zoom) % gridSize;
+            const offsetY = (camera.y * camera.zoom) % gridSize;
+            for(let x = offsetX; x < gameCanvas.width; x += gridSize) { gCtx.beginPath(); gCtx.moveTo(x,0); gCtx.lineTo(x,gameCanvas.height); gCtx.stroke(); }
+            for(let y = offsetY; y < gameCanvas.height; y += gridSize) { gCtx.beginPath(); gCtx.moveTo(0,y); gCtx.lineTo(gameCanvas.width,y); gCtx.stroke(); }
+            
+            gCtx.translate(gameCanvas.width/2, gameCanvas.height/2); gCtx.scale(camera.zoom, camera.zoom); gCtx.translate(camera.x - gameCanvas.width/2, camera.y - gameCanvas.height/2);
+
+            gameShapes.forEach(shape => {
+                gCtx.beginPath();
+                for (let i = 0; i < shape.sides; i++) {
+                    const a = shape.angle + (i * 2 * Math.PI / shape.sides) - Math.PI / 2;
+                    gCtx.lineTo(shape.x + shape.r * Math.cos(a), shape.y + shape.r * Math.sin(a));
+                }
+                gCtx.closePath();
+                gCtx.fillStyle = shape.color; gCtx.fill(); gCtx.lineWidth = 2; gCtx.strokeStyle = '#2c3e50'; gCtx.stroke();
+
+                if (shape === selectedShape) {
+                    gCtx.save();
+                    gCtx.translate(shape.x, shape.y);
+                    gCtx.beginPath(); gCtx.arc(0, 0, shape.r + 5, 0, Math.PI*2);
+                    gCtx.strokeStyle = 'rgba(41, 128, 185, 0.6)'; gCtx.setLineDash([5, 5]); gCtx.stroke(); gCtx.setLineDash([]);
+                    let ha = shape.angle - Math.PI/2;
+                    let hx = (shape.r + 35) * Math.cos(ha), hy = (shape.r + 35) * Math.sin(ha);
+                    gCtx.beginPath(); gCtx.moveTo(0, 0); gCtx.lineTo(hx, hy); gCtx.strokeStyle = '#2980b9'; gCtx.stroke();
+                    gCtx.beginPath(); gCtx.arc(hx, hy, 8, 0, Math.PI*2); gCtx.fillStyle = '#fff'; gCtx.fill(); gCtx.lineWidth = 2; gCtx.stroke();
+                    gCtx.restore();
+                }
+            });
+            gCtx.restore();
+        }
+
+        function getMouseWorld(x, y) {
+            return {
+                wx: (x - gameCanvas.width/2) / camera.zoom - camera.x + gameCanvas.width/2,
+                wy: (y - gameCanvas.height/2) / camera.zoom - camera.y + gameCanvas.height/2
+            };
+        }
+
+        function getShapeEdges(shape) {
+            let edges = [], verts = [];
+            for (let i = 0; i < shape.sides; i++) {
+                const a = shape.angle + (i * 2 * Math.PI / shape.sides) - Math.PI / 2;
+                verts.push({ x: shape.x + shape.r * Math.cos(a), y: shape.y + shape.r * Math.sin(a) });
+            }
+            for (let i = 0; i < shape.sides; i++) {
+                let v1 = verts[i], v2 = verts[(i+1)%shape.sides];
+                edges.push({ v1, v2, midX: (v1.x+v2.x)/2, midY: (v1.y+v2.y)/2, ang: Math.atan2(v2.y-v1.y, v2.x-v1.x) });
+            }
+            return edges;
+        }
+
+        function snapEdges(activeShape) {
+            let minDist = 30 / camera.zoom, bestMatch = null, activeEdges = getShapeEdges(activeShape);
+            for (let other of gameShapes) {
+                if (other === activeShape) continue;
+                let otherEdges = getShapeEdges(other);
+                for (let i = 0; i < otherEdges.length; i++) {
+                    for (let j = 0; j < activeEdges.length; j++) {
+                        let eA = otherEdges[i], eB = activeEdges[j];
+                        let dist = Math.hypot(eA.midX - eB.midX, eA.midY - eB.midY);
+                        if (dist < minDist) { minDist = dist; bestMatch = {eA, eB, j}; }
+                    }
+                }
+            }
+            if (bestMatch) {
+                let {eA, eB, j} = bestMatch;
+                activeShape.angle += (eA.ang + Math.PI) - eB.ang;
+                let newEB = getShapeEdges(activeShape)[j];
+                activeShape.x += eA.v2.x - newEB.v1.x; activeShape.y += eA.v2.y - newEB.v1.y;
+            }
+        }
+
+        function handleGameDown(e) {
+            const {x, y, isTouch} = getEventPos(e, gameCanvas);
+            const {wx, wy} = getMouseWorld(x, y);
+            
+            if (selectedShape) {
+                let ha = selectedShape.angle - Math.PI/2;
+                let hx = selectedShape.x + (selectedShape.r + 35) * Math.cos(ha);
+                let hy = selectedShape.y + (selectedShape.r + 35) * Math.sin(ha);
+                if (Math.hypot(wx - hx, wy - hy) < 20 / camera.zoom) {
+                    isRotatingShape = true;
+                    return;
+                }
+            }
+
+            let hitShape = null;
+            for (let i = gameShapes.length - 1; i >= 0; i--) {
+                if (Math.hypot(wx - gameShapes[i].x, wy - gameShapes[i].y) < gameShapes[i].r) {
+                    hitShape = gameShapes[i]; break;
+                }
+            }
+
+            selectedShape = hitShape;
+            if (hitShape) {
+                gameShapes = gameShapes.filter(s => s !== hitShape); gameShapes.push(hitShape);
+                isDraggingShape = true;
+            } else {
+                if(e.button === 2 || isTouch) { isPanning = true; lastMouse = {x, y}; }
+            }
+            renderGame();
+        }
+
+        function handleGameMove(e) {
+            const {x, y} = getEventPos(e, gameCanvas);
+            const {wx, wy} = getMouseWorld(x, y);
+            
+            if (isRotatingShape && selectedShape) {
+                selectedShape.angle = Math.atan2(wy - selectedShape.y, wx - selectedShape.x) + Math.PI/2;
+                renderGame();
+            } else if (isPanning) {
+                camera.x += (x - lastMouse.x) / camera.zoom; camera.y += (y - lastMouse.y) / camera.zoom;
+                lastMouse = {x, y}; renderGame();
+            } else if (isDraggingShape && selectedShape) {
+                selectedShape.x = wx; selectedShape.y = wy; renderGame();
+            }
+        }
+
+        function handleGameUp() {
+            if(isDraggingShape && selectedShape) snapEdges(selectedShape);
+            isDraggingShape = false; isRotatingShape = false; isPanning = false; renderGame();
+        }
+
+        gameCanvas.addEventListener('mousedown', handleGameDown); gameCanvas.addEventListener('mousemove', handleGameMove); gameCanvas.addEventListener('mouseup', handleGameUp);
+        gameCanvas.addEventListener('touchstart', handleGameDown, {passive: false}); gameCanvas.addEventListener('touchmove', handleGameMove, {passive: false}); gameCanvas.addEventListener('touchend', handleGameUp);
+        gameCanvas.addEventListener('contextmenu', e => e.preventDefault());
+        gameCanvas.addEventListener('wheel', e => { e.preventDefault(); camera.zoom = Math.max(0.4, Math.min(camera.zoom * (e.deltaY > 0 ? 0.9 : 1.1), 3)); renderGame(); });
+
+        async function shareDesign() {
+            if (navigator.share) { try { await navigator.share({ title: '我的幾何畫作', text: '快來看看！', url: window.location.href }); } catch(err) {} } 
+            else { alert('您的裝置/瀏覽器不支援 Web Share API (AirDrop)，請直接截圖分享唷！'); }
+        }
+        function initGameCanvas() { drawSidebarIcons(); renderGame(); }
+
+        // --- 5-2 動態邊長實作 ---
+        function drawGrid(ctx, w, h) {
+            ctx.save(); ctx.strokeStyle = '#eef2f3'; ctx.lineWidth = 1;
+            for(let i=0; i<w; i+=20) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,h); ctx.stroke(); }
+            for(let i=0; i<h; i+=20) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(w,i); ctx.stroke(); }
+            ctx.restore();
+        }
+
+        function updateTriangle() {
+            const a = parseFloat(document.getElementById('sliderA').value), b = parseFloat(document.getElementById('sliderB').value), c = parseFloat(document.getElementById('sliderC').value);
+            document.getElementById('valA').innerText = a; document.getElementById('valB').innerText = b; document.getElementById('valC').innerText = c;
+            const canvas = document.getElementById('canvasTriangle'); const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height); drawGrid(ctx, canvas.width, canvas.height);
+            const scale = 18, A = a * scale, B = b * scale, C = c * scale;
+            const baseX = canvas.width / 2 - C / 2, baseY = 280;
+
+            ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.strokeStyle = '#2ecc71';
+            ctx.beginPath(); ctx.moveTo(baseX, baseY); ctx.lineTo(baseX + C, baseY); ctx.stroke();
+            ctx.fillStyle = '#222'; ctx.font="16px Arial"; ctx.fillText(`底邊 C: ${c}`, baseX + C/2 - 30, baseY + 25);
+
+            const resDiv = document.getElementById('triangleResult');
+            const sorted = [a,b,c].sort((x,y)=>x-y);
+            
+            if (sorted[0] + sorted[1] > sorted[2]) {
+                const angleA = Math.acos((C*C + A*A - B*B) / (2 * C * A));
+                const topX = baseX + A * Math.cos(angleA), topY = baseY - A * Math.sin(angleA);
+                ctx.strokeStyle = '#e74c3c'; ctx.beginPath(); ctx.moveTo(baseX, baseY); ctx.lineTo(topX, topY); ctx.stroke();
+                ctx.strokeStyle = '#3498db'; ctx.beginPath(); ctx.moveTo(baseX + C, baseY); ctx.lineTo(topX, topY); ctx.stroke();
+                resDiv.style.color = '#27ae60'; resDiv.innerHTML = `✅ ${sorted[0]} + ${sorted[1]} > ${sorted[2]}，成功組合！[cite: 1]`;
+            } else {
+                ctx.strokeStyle = '#e74c3c'; ctx.beginPath(); ctx.moveTo(baseX, baseY); ctx.lineTo(baseX + A, baseY - 5); ctx.stroke();
+                ctx.strokeStyle = '#3498db'; ctx.beginPath(); ctx.moveTo(baseX + C, baseY); ctx.lineTo(baseX + C - B, baseY - 5); ctx.stroke();
+                resDiv.style.color = '#e74c3c'; resDiv.innerHTML = `❌ 無法閉合！[cite: 1]`;
+            }
+        }
+
+        // --- 5-3 手動拖曳拼湊實驗 (PPT 旋轉 + 完美吸附點) ---
+        const mProofCanvas = document.getElementById('canvasManualProof');
+        const mCtx = mProofCanvas.getContext('2d');
+        let manualCorners = [], selectedCorner = null, isDraggingCorner = false, isRotatingCorner = false;
+        const mpTriPts = [ {x: 350, y: 100}, {x: 180, y: 300}, {x: 580, y: 300} ]; 
+        const TARGET_CENTER = { x: 350, y: 400 };
+
+        function getInnerArc(center, p1, p2) {
+            let a1 = Math.atan2(p1.y - center.y, p1.x - center.x);
+            let a2 = Math.atan2(p2.y - center.y, p2.x - center.x);
+            if (a1 < 0) a1 += Math.PI * 2; if (a2 < 0) a2 += Math.PI * 2;
+            if (a1 > a2) { let t = a1; a1 = a2; a2 = t; }
+            if (a2 - a1 > Math.PI) return { start: a2, end: a1 + Math.PI * 2 };
+            return { start: a1, end: a2 };
+        }
+
+        function initManualAngleProof() {
+            const r = 55; 
+            const arcA = getInnerArc(mpTriPts[0], mpTriPts[1], mpTriPts[2]);
+            const arcB = getInnerArc(mpTriPts[1], mpTriPts[0], mpTriPts[2]);
+            const arcC = getInnerArc(mpTriPts[2], mpTriPts[0], mpTriPts[1]);
+
+            manualCorners = [
+                { id: 1, x: mpTriPts[0].x, y: mpTriPts[0].y, start: arcA.start, end: arcA.end, rot: 0, color: '#e74c3c', r: r }, 
+                { id: 2, x: mpTriPts[1].x, y: mpTriPts[1].y, start: arcB.start, end: arcB.end, rot: 0, color: '#3498db', r: r }, 
+                { id: 3, x: mpTriPts[2].x, y: mpTriPts[2].y, start: arcC.start, end: arcC.end, rot: 0, color: '#f1c40f', r: r }  
+            ];
+            selectedCorner = null;
+            renderManualProof();
+        }
+
+        function renderManualProof() {
+            mCtx.clearRect(0, 0, mProofCanvas.width, mProofCanvas.height);
+            drawGrid(mCtx, mProofCanvas.width, mProofCanvas.height);
+
+            mCtx.beginPath(); mCtx.moveTo(150, TARGET_CENTER.y); mCtx.lineTo(550, TARGET_CENTER.y);
+            mCtx.strokeStyle = '#2ecc71'; mCtx.lineWidth = 4; mCtx.stroke();
+            mCtx.beginPath(); mCtx.arc(TARGET_CENTER.x, TARGET_CENTER.y, 6, 0, Math.PI*2); mCtx.fillStyle = '#27ae60'; mCtx.fill();
+            mCtx.font = "16px Arial"; mCtx.fillText("將角拖曳至此綠點結合", TARGET_CENTER.x - 80, TARGET_CENTER.y + 30);
+
+            const r = 55;
+            const arcA = getInnerArc(mpTriPts[0], mpTriPts[1], mpTriPts[2]);
+            const arcB = getInnerArc(mpTriPts[1], mpTriPts[0], mpTriPts[2]);
+            const arcC = getInnerArc(mpTriPts[2], mpTriPts[0], mpTriPts[1]);
+            mCtx.beginPath();
+            mCtx.moveTo(mpTriPts[0].x + r*Math.cos(arcA.start), mpTriPts[0].y + r*Math.sin(arcA.start));
+            mCtx.lineTo(mpTriPts[2].x + r*Math.cos(arcC.end), mpTriPts[2].y + r*Math.sin(arcC.end));
+            mCtx.arc(mpTriPts[2].x, mpTriPts[2].y, r, arcC.end, arcC.start, true); 
+            mCtx.lineTo(mpTriPts[1].x + r*Math.cos(arcB.end), mpTriPts[1].y + r*Math.sin(arcB.end));
+            mCtx.arc(mpTriPts[1].x, mpTriPts[1].y, r, arcB.end, arcB.start, true); 
+            mCtx.lineTo(mpTriPts[0].x + r*Math.cos(arcA.end), mpTriPts[0].y + r*Math.sin(arcA.end));
+            mCtx.arc(mpTriPts[0].x, mpTriPts[0].y, r, arcA.end, arcA.start, true); 
+            mCtx.closePath();
+            mCtx.fillStyle = '#ecf0f1'; mCtx.fill(); mCtx.strokeStyle = '#bdc3c7'; mCtx.lineWidth = 2; mCtx.stroke();
+
+            manualCorners.forEach(c => {
+                mCtx.save(); mCtx.translate(c.x, c.y); mCtx.rotate(c.rot);
+                mCtx.beginPath(); mCtx.moveTo(0, 0); mCtx.arc(0, 0, c.r, c.start, c.end); mCtx.closePath();
+                mCtx.fillStyle = c.color; mCtx.fill(); mCtx.strokeStyle = '#333'; mCtx.lineWidth = 1.5; mCtx.stroke();
+                mCtx.beginPath(); mCtx.moveTo(c.r*Math.cos(c.start), c.r*Math.sin(c.start));
+                mCtx.lineTo(c.r*1.1*Math.cos((c.start+c.end)/2), c.r*1.1*Math.sin((c.start+c.end)/2));
+                mCtx.lineTo(c.r*Math.cos(c.end), c.r*Math.sin(c.end)); mCtx.strokeStyle = '#7f8c8d'; mCtx.stroke();
+                mCtx.restore();
+
+                if (c === selectedCorner) {
+                    mCtx.save();
+                    let midA = (c.start + c.end)/2 + c.rot;
+                    let hx = c.x + (c.r + 35) * Math.cos(midA), hy = c.y + (c.r + 35) * Math.sin(midA);
+                    mCtx.beginPath(); mCtx.moveTo(c.x, c.y); mCtx.lineTo(hx, hy); mCtx.strokeStyle = '#2980b9'; mCtx.stroke();
+                    mCtx.beginPath(); mCtx.arc(hx, hy, 8, 0, Math.PI*2); mCtx.fillStyle = '#fff'; mCtx.fill(); mCtx.lineWidth = 2; mCtx.stroke();
+                    mCtx.restore();
+                }
+            });
+        }
+
+        function handleProofDown(e) {
+            const {x, y} = getEventPos(e, mProofCanvas);
+            
+            if (selectedCorner) {
+                let midA = (selectedCorner.start + selectedCorner.end)/2 + selectedCorner.rot;
+                let hx = selectedCorner.x + (selectedCorner.r + 35) * Math.cos(midA);
+                let hy = selectedCorner.y + (selectedCorner.r + 35) * Math.sin(midA);
+                if (Math.hypot(x - hx, y - hy) < 20) { isRotatingCorner = true; return; }
+            }
+
+            let hit = null;
+            for (let i = manualCorners.length - 1; i >= 0; i--) {
+                if (Math.hypot(x - manualCorners[i].x, y - manualCorners[i].y) < manualCorners[i].r + 10) { 
+                    hit = manualCorners[i]; break;
+                }
+            }
+            selectedCorner = hit;
+            if (hit) {
+                manualCorners = manualCorners.filter(c => c !== hit); manualCorners.push(hit);
+                isDraggingCorner = true;
+            }
+            renderManualProof();
+        }
+
+        function handleProofMove(e) {
+            const {x, y} = getEventPos(e, mProofCanvas);
+            if (isRotatingCorner && selectedCorner) {
+                selectedCorner.rot = Math.atan2(y - selectedCorner.y, x - selectedCorner.x) - (selectedCorner.start + selectedCorner.end)/2;
+                renderManualProof();
+            } else if (isDraggingCorner && selectedCorner) {
+                selectedCorner.x = x; selectedCorner.y = y; renderManualProof();
+            }
+        }
+
+        function handleProofUp() {
+            if (selectedCorner) {
+                if (isDraggingCorner && Math.hypot(selectedCorner.x - TARGET_CENTER.x, selectedCorner.y - TARGET_CENTER.y) < 40) { 
+                    selectedCorner.x = TARGET_CENTER.x; selectedCorner.y = TARGET_CENTER.y; 
+                }
+                
+                if (selectedCorner.x === TARGET_CENTER.x && selectedCorner.y === TARGET_CENTER.y) {
+                    let snapAngles = [0, Math.PI, Math.PI*2, -Math.PI]; 
+                    manualCorners.forEach(other => {
+                        if (other !== selectedCorner && other.x === TARGET_CENTER.x && other.y === TARGET_CENTER.y) {
+                            snapAngles.push(other.start + other.rot); snapAngles.push(other.end + other.rot);
+                            snapAngles.push(other.start + other.rot + Math.PI); snapAngles.push(other.end + other.rot + Math.PI);
+                        }
+                    });
+                    
+                    let curStart = (selectedCorner.start + selectedCorner.rot) % (Math.PI*2);
+                    let curEnd = (selectedCorner.end + selectedCorner.rot) % (Math.PI*2);
+                    if (curStart < 0) curStart += Math.PI*2; if (curEnd < 0) curEnd += Math.PI*2;
+                    
+                    let bestRot = selectedCorner.rot, minDiff = 0.2; 
+                    snapAngles.forEach(ta => {
+                        ta = ta % (Math.PI*2); if (ta < 0) ta += Math.PI*2;
+                        let d1 = Math.abs(curStart - ta); if (d1 > Math.PI) d1 = Math.PI*2 - d1;
+                        if (d1 < minDiff) { minDiff = d1; bestRot = selectedCorner.rot + (ta - curStart); }
+                        let d2 = Math.abs(curEnd - ta); if (d2 > Math.PI) d2 = Math.PI*2 - d2;
+                        if (d2 < minDiff) { minDiff = d2; bestRot = selectedCorner.rot + (ta - curEnd); }
+                    });
+                    selectedCorner.rot = bestRot;
+                }
+            }
+            isDraggingCorner = false; isRotatingCorner = false; renderManualProof();
+        }
+
+        mProofCanvas.addEventListener('mousedown', handleProofDown); mProofCanvas.addEventListener('mousemove', handleProofMove); mProofCanvas.addEventListener('mouseup', handleProofUp);
+        mProofCanvas.addEventListener('touchstart', handleProofDown, {passive: false}); mProofCanvas.addEventListener('touchmove', handleProofMove, {passive: false}); mProofCanvas.addEventListener('touchend', handleProofUp);
+
+        // --- 5-4 步驟化繪圖 (優化過 180 度量角器顯示) ---
+        let currentSectorStep = 0, isSectorAnimating = false, sectorAnimProgress = 0;
+        function resetSectorDrawing() {
+            currentSectorStep = 0; isSectorAnimating = false; sectorAnimProgress = 0;
+            document.getElementById('sectorAngleVal').innerText = document.getElementById('sliderSector').value;
+            document.getElementById('sectorDesc').innerHTML = "請設定好圓心角，點擊「下一步」開始繪製步驟。";
+            document.getElementById('btnNextSector').disabled = false;
+            document.getElementById('btnNextSector').innerHTML = "⏭️ 下一步";
+            renderSectorStatic();
+        }
+
+        function nextSectorStep() {
+            if(isSectorAnimating) return;
+            if(currentSectorStep < 4) {
+                currentSectorStep++;
+                const desc = document.getElementById('sectorDesc');
+                if(currentSectorStep === 1) desc.innerHTML = "📝 步驟 1：畫出一條直線作為扇形的起始【半徑】[cite: 7]。";
+                if(currentSectorStep === 2) desc.innerHTML = "📏 步驟 2：以頂點為圓心，畫出一段適當長度的【圓弧】[cite: 7]。";
+                if(currentSectorStep === 3) desc.innerHTML = "📐 步驟 3：使用【量角器】測量指定的圓心角，並做記號[cite: 7]！";
+                if(currentSectorStep === 4) desc.innerHTML = "📝 步驟 4：使用直尺將圓心與記號連線，完成扇形[cite: 7]！";
+                
+                isSectorAnimating = true; sectorAnimProgress = 0;
+                document.getElementById('btnNextSector').disabled = true; 
+                requestAnimationFrame(animateSectorStep);
+            } else { resetSectorDrawing(); }
+        }
+
+        function animateSectorStep() {
+            sectorAnimProgress += 0.03;
+            if(sectorAnimProgress >= 1) {
+                sectorAnimProgress = 1; isSectorAnimating = false;
+                document.getElementById('btnNextSector').disabled = false;
+                if(currentSectorStep === 4) document.getElementById('btnNextSector').innerHTML = "🔄 重新繪製";
+                renderSectorStatic(); return;
+            }
+            renderSectorStatic(sectorAnimProgress);
+            requestAnimationFrame(animateSectorStep);
+        }
+
+        function renderSectorStatic(progress = 1) {
+            const canvas = document.getElementById('canvasSector'); const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height); drawGrid(ctx, canvas.width, canvas.height);
+            const angleDeg = parseInt(document.getElementById('sliderSector').value), angleRad = angleDeg * Math.PI / 180;
+            const cx = 350, cy = 250, r = 180; ctx.lineWidth = 3; ctx.font = "16px Arial";
+
+            if (currentSectorStep >= 1) {
+                const len = (currentSectorStep === 1) ? r * progress : r;
+                ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + len, cy); ctx.strokeStyle = '#2980b9'; ctx.stroke();
+                if(currentSectorStep === 1 || progress === 1) {
+                    ctx.fillStyle = 'black'; ctx.fillText("圓心", cx - 40, cy + 5);
+                    if(progress > 0.5) ctx.fillText("半徑", cx + r/2, cy + 20);
+                }
+            }
+            if (currentSectorStep >= 2) {
+                const curAngle = (currentSectorStep === 2) ? angleRad * progress : angleRad;
+                if(curAngle > 0) { ctx.beginPath(); ctx.arc(cx, cy, r, 0, -curAngle, true); ctx.strokeStyle = '#e67e22'; ctx.stroke(); }
+                if(currentSectorStep > 2 || progress === 1) { const midA = -angleRad / 2; ctx.fillStyle = 'black'; ctx.fillText("圓弧", cx + (r+20)*Math.cos(midA) - 15, cy + (r+20)*Math.sin(midA)); }
+            }
+            if (currentSectorStep >= 3) {
+                let alpha = (currentSectorStep === 3) ? progress : (currentSectorStep === 4 ? (1 - progress) : 0);
+                if (alpha > 0) {
+                    ctx.save(); ctx.globalAlpha = alpha; 
+                    ctx.beginPath(); 
+                    if (angleDeg <= 180) {
+                        ctx.arc(cx, cy, 140, 0, Math.PI, true); ctx.closePath();
+                    } else {
+                        ctx.arc(cx, cy, 140, 0, Math.PI * 2);
+                    }
+                    ctx.fillStyle = 'rgba(149, 165, 166, 0.2)'; ctx.fill(); ctx.strokeStyle='rgba(149,165,166,0.6)'; ctx.stroke();
+                    ctx.fillStyle = '#333'; 
+                    if (angleDeg <= 180) {
+                        ctx.fillText("半圓量角器", cx - 40, cy - 60);
+                    } else {
+                        ctx.fillText("圓形量角器", cx - 40, cy - 60);
+                    }
+                    ctx.restore();
+                }
+                let dotAlpha = (currentSectorStep === 3) ? progress : 1;
+                ctx.save(); ctx.globalAlpha = dotAlpha;
+                ctx.beginPath(); ctx.arc(cx + r * Math.cos(-angleRad), cy + r * Math.sin(-angleRad), 5, 0, Math.PI*2);
+                ctx.fillStyle = '#e74c3c'; ctx.fill(); ctx.restore();
+            }
+            if (currentSectorStep >= 4) {
+                const len = (currentSectorStep === 4) ? r * progress : r;
+                ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + len * Math.cos(-angleRad), cy + len * Math.sin(-angleRad)); ctx.strokeStyle = '#2980b9'; ctx.stroke();
+                if(progress === 1) {
+                    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r, 0, -angleRad, true); ctx.closePath(); ctx.fillStyle = 'rgba(52, 152, 219, 0.2)'; ctx.fill();
+                    ctx.beginPath(); ctx.arc(cx, cy, 40, 0, -angleRad, true); ctx.strokeStyle = 'red'; ctx.stroke();
+                    const textA = -angleRad / 2; ctx.fillStyle = 'red'; ctx.fillText(`${angleDeg}°`, cx + 55*Math.cos(textA) - 10, cy + 55*Math.sin(textA) + 5);
+                }
+            }
+        }
+        window.onload = function() { initStaticPolygons(); setTimeout(drawSidebarIcons, 100); };
+    </script>
+</body>
+</html>

@@ -45,7 +45,9 @@
         .drag-item:hover { transform: scale(1.1); }
         #gameCanvasContainer { flex: 1; position: relative; border-radius: 8px; overflow: hidden; border: 2px dashed #bdc3c7; background: #fafafa; touch-action: none; }
         .game-hint { position: absolute; bottom: 10px; left: 10px; font-size: 13px; color: #7f8c8d; pointer-events: none; background: rgba(255,255,255,0.9); padding: 5px 10px; border-radius: 4px; z-index: 5;}
-        #shareBtn { position: absolute; top: 10px; right: 10px; z-index: 10; background: #9b59b6; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        
+        .share-container { position: absolute; top: 10px; right: 10px; z-index: 10; display: flex; gap: 8px; }
+        .id-input { padding: 8px 12px; border-radius: 6px; border: 2px solid #9b59b6; outline: none; width: 130px; font-size: 14px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         
         .step-desc { background: #fff3cd; color: #856404; padding: 12px; border-radius: 8px; font-size: 16px; font-weight: bold; text-align: center; border: 1px solid #ffeeba; min-height: 48px;}
         
@@ -95,8 +97,11 @@
                     <canvas class="drag-item" id="btn-poly-6" width="70" height="70" onclick="addShapeToGame(6)"></canvas>
                 </div>
                 <div id="gameCanvasContainer">
-                    <button class="btn" id="shareBtn" onclick="shareDesign()">📤 AirDrop / 分享</button>
-                    <!-- 新增的畫布縮放按鈕 -->
+                    <div class="share-container">
+                        <input type="text" id="studentId" class="id-input" placeholder="輸入姓名 / ID" oninput="renderGame()">
+                        <button class="btn" onclick="shareDesign()" style="background: #9b59b6; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">📤 傳送作品</button>
+                    </div>
+                    <!-- 縮放按鈕 -->
                     <div class="zoom-controls">
                         <button class="zoom-btn" onclick="zoomGameCanvas(1.2)">➕</button>
                         <button class="zoom-btn" onclick="zoomGameCanvas(0.8)">➖</button>
@@ -268,7 +273,7 @@
         let gameShapes = [], camera = { x: 0, y: 0, zoom: 1 };
         let selectedShape = null, isDraggingShape = false, isRotatingShape = false;
         let isPanning = false, lastMouse = { x: 0, y: 0 };
-        let initialPinchDistance = null; // 用於儲存雙指初始距離
+        let initialPinchDistance = null; 
         const SHAPE_SIDE_LEN = 60; 
 
         function zoomGameCanvas(factor) {
@@ -302,6 +307,8 @@
         function renderGame() {
             gCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
             gCtx.save();
+            
+            // 畫背景網格
             gCtx.strokeStyle = '#e0e0e0'; gCtx.lineWidth = 1;
             const gridSize = 40 * camera.zoom;
             const offsetX = (camera.x * camera.zoom) % gridSize;
@@ -309,8 +316,8 @@
             for(let x = offsetX; x < gameCanvas.width; x += gridSize) { gCtx.beginPath(); gCtx.moveTo(x,0); gCtx.lineTo(x,gameCanvas.height); gCtx.stroke(); }
             for(let y = offsetY; y < gameCanvas.height; y += gridSize) { gCtx.beginPath(); gCtx.moveTo(0,y); gCtx.lineTo(gameCanvas.width,y); gCtx.stroke(); }
             
+            // 畫圖形
             gCtx.translate(gameCanvas.width/2, gameCanvas.height/2); gCtx.scale(camera.zoom, camera.zoom); gCtx.translate(camera.x - gameCanvas.width/2, camera.y - gameCanvas.height/2);
-
             gameShapes.forEach(shape => {
                 gCtx.beginPath();
                 for (let i = 0; i < shape.sides; i++) {
@@ -333,6 +340,18 @@
                 }
             });
             gCtx.restore();
+
+            // 畫出學生姓名 / ID (固定在左上角，不受相機縮放影響)
+            const studentId = document.getElementById('studentId') ? document.getElementById('studentId').value : '';
+            if (studentId.trim() !== '') {
+                gCtx.save();
+                gCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                gCtx.fillRect(10, 10, 200, 40);
+                gCtx.fillStyle = '#2c3e50';
+                gCtx.font = 'bold 22px "PingFang TC", "Microsoft JhengHei", sans-serif';
+                gCtx.fillText(`作者: ${studentId}`, 20, 38);
+                gCtx.restore();
+            }
         }
 
         function getMouseWorld(x, y) {
@@ -377,7 +396,6 @@
         }
 
         function handleGameDown(e) {
-            // 雙指縮放處理
             if (e.touches && e.touches.length === 2) {
                 initialPinchDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
                 isDraggingShape = false; isPanning = false; isRotatingShape = false;
@@ -415,7 +433,6 @@
         }
 
         function handleGameMove(e) {
-            // 雙指縮放處理
             if (e.touches && e.touches.length === 2 && initialPinchDistance !== null) {
                 if(e.cancelable) e.preventDefault();
                 let currentDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
@@ -440,7 +457,7 @@
         }
 
         function handleGameUp(e) {
-            if (e.touches && e.touches.length < 2) initialPinchDistance = null;
+            if (e && e.touches && e.touches.length < 2) initialPinchDistance = null;
             if(isDraggingShape && selectedShape) snapEdges(selectedShape);
             isDraggingShape = false; isRotatingShape = false; isPanning = false; renderGame();
         }
@@ -450,9 +467,37 @@
         gameCanvas.addEventListener('contextmenu', e => e.preventDefault());
         gameCanvas.addEventListener('wheel', e => { e.preventDefault(); camera.zoom = Math.max(0.4, Math.min(camera.zoom * (e.deltaY > 0 ? 0.9 : 1.1), 3)); renderGame(); });
 
+        // 升級版：直接截圖分享圖片
         async function shareDesign() {
-            if (navigator.share) { try { await navigator.share({ title: '我的幾何畫作', text: '快來看看！', url: window.location.href }); } catch(err) {} } 
-            else { alert('您的裝置/瀏覽器不支援 Web Share API (AirDrop)，請直接截圖分享唷！'); }
+            // 確保姓名被畫上去
+            renderGame();
+            
+            gameCanvas.toBlob(async (blob) => {
+                if (!blob) { alert('無法產生圖片！'); return; }
+                
+                const file = new File([blob], '我的幾何畫作.png', { type: 'image/png' });
+                
+                // 檢查瀏覽器是否支援直接分享檔案
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            files: [file],
+                            title: '我的幾何畫作',
+                            text: '看看我用多邊形拼出的圖案！'
+                        });
+                    } catch (err) {
+                        console.log("分享已取消或發生錯誤：", err);
+                    }
+                } else {
+                    // 若不支援檔案分享，直接觸發下載
+                    const link = document.createElement('a');
+                    link.download = '我的幾何畫作.png';
+                    link.href = URL.createObjectURL(blob);
+                    link.click();
+                    URL.revokeObjectURL(link.href);
+                    alert('您的裝置不支援直接分享圖片，已自動為您下載儲存！');
+                }
+            }, 'image/png');
         }
         function initGameCanvas() { drawSidebarIcons(); renderGame(); }
 

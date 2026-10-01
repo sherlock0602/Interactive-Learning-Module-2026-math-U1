@@ -142,34 +142,62 @@
       </div>
     </section>
 
-    <!-- ==================== 4-3 ==================== -->
+<!-- ==================== 4-3 ==================== -->
     <section id="tab-4-3" class="tab-content hidden space-y-6 max-w-5xl mx-auto">
       <div class="bg-gradient-to-r from-sky-50 to-blue-50 border-2 border-sky-200 rounded-2xl p-5 shadow-sm">
-        <h2 class="text-xl font-black text-sky-900"><i class="fa-solid fa-scissors mr-2"></i>4-3 約分：找公因數來打包化簡</h2>
-        <p class="text-slate-600 mt-1">分子和分母同時除以一個大於 1 的公因數，得到相等的分數叫做約分。</p>
+        <h2 class="text-xl font-black text-sky-900"><i class="fa-solid fa-scissors mr-2"></i>4-3 約分：找公因數化簡分數</h2>
+        <p class="text-slate-600 mt-1">把分子和分母同時「除以」一個大於 1 的公因數，分數的大小不變，這個動作叫做「約分」。當不能再約分時，稱為「最簡分數」。</p>
       </div>
+      
       <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
-        <div class="flex flex-wrap justify-between items-center gap-4">
-          <h3 class="text-lg font-black text-slate-800 flex items-center gap-2"><i class="fa-solid fa-cube text-sky-500"></i> 公因數打包收納機</h3>
-          <div class="flex items-center gap-2">
-            <button onclick="loadReduceChallenge(6, 18)" id="red-btn-6-18" class="reduce-prob-btn px-3 py-1.5 rounded-lg text-sm font-black bg-sky-500 text-white shadow">6/18</button>
-            <button onclick="loadReduceChallenge(8, 12)" id="red-btn-8-12" class="reduce-prob-btn px-3 py-1.5 rounded-lg text-sm font-black bg-slate-100 text-slate-700">8/12</button>
+        <!-- 題目選擇區 (多範例) -->
+        <div class="flex flex-wrap items-center gap-3 border-b border-slate-100 pb-4">
+          <span class="font-bold text-slate-700"><i class="fa-solid fa-book-open text-sky-500"></i> 選擇練習題：</span>
+          <div id="reduce-presets" class="flex flex-wrap gap-2">
+            <!-- JavaScript 會自動生成按鈕 -->
           </div>
         </div>
-        <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 text-center space-y-4">
-          <div id="reduce-grid-container" class="flex flex-wrap justify-center gap-2 max-w-2xl mx-auto p-3 bg-white rounded-xl border border-slate-200 shadow-inner"></div>
-          <div id="reduce-group-desc" class="text-sm font-bold text-sky-800"></div>
-        </div>
-        <div class="space-y-3">
-          <div class="text-sm font-bold text-slate-700 flex items-center justify-between">
-            <span id="simplify-status">點選公因數進行打包：</span>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start pt-2">
+          <!-- 左側：視覺化與目前分數 -->
+          <div class="flex flex-col space-y-4">
+            <div class="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-2xl border border-slate-200 shadow-inner min-h-[180px]">
+              <div class="text-sm font-bold text-slate-500 mb-4">現在的分數</div>
+              <div id="current-reduce-frac" class="text-6xl font-black text-sky-700 flex flex-col items-center gap-1">
+                <!-- JavaScript 動態渲染目前分數 -->
+              </div>
+            </div>
+            
+            <div class="space-y-1">
+              <div class="text-xs font-bold text-slate-500 flex justify-between">
+                <span>圖示概念：總量與比例不變，但切割變少了！</span>
+                <span id="reduce-bar-label" class="text-sky-700 font-black"></span>
+              </div>
+              <div id="reduce-visual-bar" class="w-full h-10 flex rounded-lg overflow-hidden border-2 border-slate-300 shadow-sm transition-all duration-500 bg-slate-200">
+                <!-- JavaScript 動態渲染分數條 -->
+              </div>
+            </div>
           </div>
-          <div id="factors-btn-container" class="flex flex-wrap gap-3"></div>
+
+          <!-- 右側：操作與過程 -->
+          <div class="flex flex-col space-y-6 bg-sky-50/50 p-5 rounded-2xl border border-sky-100 h-full">
+            <div>
+              <div class="text-sm font-bold text-slate-700 mb-3"><i class="fa-solid fa-wand-magic-sparkles text-sky-500"></i> 請選擇要「同時除以」哪個公因數：</div>
+              <div id="factor-buttons" class="flex flex-wrap gap-3 min-h-[50px]">
+                <!-- JavaScript 動態生成除法按鈕 -->
+              </div>
+            </div>
+
+            <div class="flex-grow">
+              <div class="text-sm font-bold text-sky-800 mb-3"><i class="fa-solid fa-clock-rotate-left"></i> 約分過程紀錄：</div>
+              <div id="reduce-history" class="flex flex-wrap items-center gap-2 text-lg font-bold text-slate-700 bg-white p-4 rounded-xl border border-slate-200 min-h-[90px]">
+                <!-- JavaScript 動態生成過程軌跡 -->
+              </div>
+            </div>
+          </div>
         </div>
-        <div id="reduce-calculation-result" class="p-4 bg-sky-50 rounded-xl border border-sky-200 flex flex-wrap items-center justify-between gap-4"></div>
       </div>
     </section>
-
     <!-- ==================== 4-4 ==================== -->
     <section id="tab-4-4" class="tab-content hidden space-y-6 max-w-5xl mx-auto">
       <div class="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl p-5 shadow-sm">
@@ -298,7 +326,7 @@
       } else {
         if (tabId === 'tab-4-1') updateDivideLab();
         if (tabId === 'tab-4-2') renderExpandLab();
-        if (tabId === 'tab-4-3') loadReduceChallenge(currentReduceN, currentReduceD);
+        if (tabId === 'tab-4-3') renderReduceView();
         if (tabId === 'tab-4-4') renderTongfenVisual();
       }
     }
@@ -394,52 +422,122 @@
       document.getElementById('expand-formula-box').innerHTML = `<span class="math-frac"><span class="numerator">${baseNum}</span><span class="denominator">${baseDen}</span></span> = <span class="math-frac text-emerald-700"><span class="numerator">${baseNum} × ${mult}</span><span class="denominator">${baseDen} × ${mult}</span></span> = <span class="math-frac text-emerald-800"><span class="numerator">${newNum}</span><span class="denominator">${newDen}</span></span>`;
     }
 
-    // 4-3
-    let currentReduceN = 6, currentReduceD = 18;
-    function loadReduceChallenge(n, d) {
-      currentReduceN = n; currentReduceD = d;
-      document.querySelectorAll('.reduce-prob-btn').forEach(b => { b.classList.replace('bg-sky-500', 'bg-slate-100'); b.classList.replace('text-white', 'text-slate-700'); });
-      document.getElementById(`red-btn-${n}-${d}`).classList.replace('bg-slate-100', 'bg-sky-500');
-      document.getElementById(`red-btn-${n}-${d}`).classList.replace('text-slate-700', 'text-white');
-      renderReduceUI(n, d, null);
-    }
-    function renderReduceUI(n, d, usedFactor) {
-      const grid = document.getElementById('reduce-grid-container');
-      grid.innerHTML = '';
-      for (let i = 0; i < d; i++) {
-        const dot = document.createElement('div');
-        dot.className = `w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shadow-sm ${i < n ? 'bg-rose-500 text-white' : 'bg-slate-200'}`;
-        dot.innerHTML = i < n ? '<i class="fa-solid fa-thumbtack"></i>' : '';
-        grid.appendChild(dot);
-      }
-      document.getElementById('reduce-group-desc').innerText = `分成 ${d} 份，其中 ${n} 份著色 (${n}/${d})`;
+// ==================== 4-3 全新約分邏輯 ====================
+    let reduceState = { startN: 24, startD: 36, currN: 24, currD: 36, history: [] };
 
-      const factors = [];
-      for (let i = 2; i <= Math.min(n, d); i++) if (n % i === 0 && d % i === 0) factors.push(i);
+    const reducePresetsList = [
+      {n: 8, d: 12},
+      {n: 15, d: 20},
+      {n: 18, d: 24},
+      {n: 24, d: 36},
+      {n: 30, d: 45},
+      {n: 16, d: 32}
+    ];
+
+    function initReduceTab() {
+      const container = document.getElementById('reduce-presets');
+      container.innerHTML = '';
+      reducePresetsList.forEach((p, idx) => {
+        const btn = document.createElement('button');
+        btn.id = `preset-btn-${idx}`;
+        btn.className = 'reduce-preset-btn px-3 py-1.5 rounded-lg text-sm font-black bg-slate-100 text-slate-700 hover:bg-sky-100 transition shadow-sm';
+        btn.innerText = `${p.n}/${p.d}`;
+        btn.onclick = () => startReduceProblem(p.n, p.d, btn.id);
+        container.appendChild(btn);
+      });
+      // 預設載入 24/36 這一題
+      startReduceProblem(reducePresetsList[3].n, reducePresetsList[3].d, 'preset-btn-3');
+    }
+
+    function startReduceProblem(n, d, activeBtnId) {
+      // 更新按鈕外觀狀態
+      document.querySelectorAll('.reduce-preset-btn').forEach(b => {
+        b.classList.remove('bg-sky-500', 'text-white');
+        b.classList.add('bg-slate-100', 'text-slate-700');
+      });
+      if(activeBtnId) {
+        const activeBtn = document.getElementById(activeBtnId);
+        if(activeBtn) {
+          activeBtn.classList.remove('bg-slate-100', 'text-slate-700');
+          activeBtn.classList.add('bg-sky-500', 'text-white');
+        }
+      }
+
+      // 重設該題的狀態
+      reduceState = { startN: n, startD: d, currN: n, currD: d, history: [] };
+      renderReduceView();
+    }
+
+    // 找出兩個數字的所有公因數 (排除 1)
+    function getCommonFactors(n, d) {
+      let factors = [];
+      for (let i = 2; i <= Math.min(n, d); i++) {
+        if (n % i === 0 && d % i === 0) factors.push(i);
+      }
+      return factors;
+    }
+
+    function renderReduceView() {
+      const { currN, currD, history } = reduceState;
       
-      const factorContainer = document.getElementById('factors-btn-container');
+      // 1. 更新巨大分數顯示
+      document.getElementById('current-reduce-frac').innerHTML = `
+        <span class="numerator border-b-4 border-sky-700 pb-1">${currN}</span>
+        <span class="denominator pt-1">${currD}</span>
+      `;
+
+      // 2. 渲染視覺化長條圖 (核心概念：長度不變，只是把格線變少)
+      const visualBar = document.getElementById('reduce-visual-bar');
+      visualBar.innerHTML = '';
+      document.getElementById('reduce-bar-label').innerText = `${currN} / ${currD}`;
+      for (let i = 0; i < currD; i++) {
+        const segment = document.createElement('div');
+        segment.style.flex = '1';
+        // 分隔線會隨著份數減少而變少，視覺上呈現「合併化簡」的感覺
+        segment.className = `h-full border-r border-slate-900/15 last:border-r-0 ${i < currN ? 'bg-sky-400' : 'bg-transparent'}`;
+        visualBar.appendChild(segment);
+      }
+
+      // 3. 產生可用的公因數按鈕
+      const factors = getCommonFactors(currN, currD);
+      const factorContainer = document.getElementById('factor-buttons');
       factorContainer.innerHTML = '';
+
       if (factors.length === 0) {
-        document.getElementById('simplify-status').innerText = '🎉 已是最簡分數！';
+        factorContainer.innerHTML = `<div class="px-4 py-3 bg-emerald-100 text-emerald-800 rounded-xl font-bold border border-emerald-300 w-full text-center shadow-sm animate-pulse">🎉 不能再約分了，這就是「最簡分數」！</div>`;
       } else {
-        document.getElementById('simplify-status').innerText = '點選公因數進行打包：';
         factors.forEach(f => {
           const btn = document.createElement('button');
-          btn.className = 'px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-xl text-sm transition';
-          btn.innerText = `用 ${f} 約分 (÷${f})`;
-          btn.onclick = () => { currentReduceN = n/f; currentReduceD = d/f; renderReduceUI(currentReduceN, currentReduceD, f); };
+          btn.className = 'px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white font-black rounded-xl shadow-md transition transform hover:scale-105 active:scale-95 text-lg';
+          btn.innerHTML = `÷ ${f}`;
+          btn.onclick = () => doReduce(f);
           factorContainer.appendChild(btn);
         });
       }
 
-      if (usedFactor) {
-        document.getElementById('reduce-calculation-result').innerHTML = `<div class="font-bold">進行了：<span class="math-frac"><span class="numerator">${n * usedFactor} ÷ ${usedFactor}</span><span class="denominator">${d * usedFactor} ÷ ${usedFactor}</span></span> = <span class="math-frac text-sky-700"><span class="numerator">${n}</span><span class="denominator">${d}</span></span></div><button onclick="loadReduceChallenge(${currentReduceN}, ${currentReduceD})" class="text-xs text-sky-600 underline">重設此題</button>`;
+      // 4. 渲染歷史過程軌跡
+      const histContainer = document.getElementById('reduce-history');
+      if (history.length === 0) {
+        histContainer.innerHTML = `<span class="text-slate-400 font-normal text-sm">請點選上方按鈕開始約分...</span>`;
       } else {
-        document.getElementById('reduce-calculation-result').innerHTML = `<div class="text-slate-600 text-sm">請點選上方按鈕，化簡分數！</div>`;
+        // 開頭的初始分數
+        let html = `<div class="math-frac text-slate-400 scale-90 opacity-70"><span class="numerator">${reduceState.startN}</span><span class="denominator">${reduceState.startD}</span></div>`;
+        
+        // 沿途的約分過程
+        history.forEach(step => {
+          html += `<div class="text-sky-500 text-center px-1"><span class="text-xs block font-black">÷${step.factor}</span><i class="fa-solid fa-arrow-right"></i></div>`;
+          html += `<div class="math-frac text-sky-700"><span class="numerator">${step.n}</span><span class="denominator">${step.d}</span></div>`;
+        });
+        histContainer.innerHTML = html;
       }
     }
 
-    // 4-4
+    function doReduce(factor) {
+      reduceState.currN /= factor;
+      reduceState.currD /= factor;
+      reduceState.history.push({ n: reduceState.currN, d: reduceState.currD, factor: factor });
+      renderReduceView();
+    }    // 4-4
     let isTongfenActive = false;
     function toggleCommonDenominator() {
       isTongfenActive = !isTongfenActive;
@@ -1010,7 +1108,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       updateDivideLab();
       renderExpandLab();
-      loadReduceChallenge(6, 18);
+      initReduceTab();
       renderTongfenVisual();
     });
   </script>

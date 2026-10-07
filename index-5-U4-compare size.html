@@ -4,140 +4,182 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>異分母分數大小比較 - 小學堂</title>
-  <!-- 載入 Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* 讓解題區塊的展開動畫更加滑順 */
+    /* 容器展開與過渡 */
     .solution-container {
-      transition: max-height 0.8s ease-in-out, opacity 0.8s ease-in-out, margin 0.8s ease-in-out;
+      transition: max-height 1.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 1s ease-in-out, margin 1s ease-in-out;
     }
+    .tab-content { display: none; opacity: 0; transition: opacity 0.5s; }
+    .tab-content.active { display: block; opacity: 1; animation: fadeIn 0.5s ease-out forwards; }
+
+    /* --- 核心動畫 --- */
+    /* 1. 畫出外框 (筆劃動畫) */
+    .draw-circle {
+      stroke-dasharray: 510; /* r=80 的周長約為 502 */
+      stroke-dashoffset: 510;
+      animation: drawStroke 1.2s ease-in-out forwards;
+    }
+    @keyframes drawStroke {
+      to { stroke-dashoffset: 0; }
+    }
+
+    /* 2. 扇形依序拼湊 (縮放 + 淡入) */
+    @keyframes assembleSlice {
+      0% { opacity: 0; transform: scale(0.5); }
+      70% { opacity: 1; transform: scale(1.05); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    /* 3. 平鋪長條依序放下 (落下 + 淡入) */
+    @keyframes dropWedge {
+      0% { opacity: 0; transform: translateY(-20px) scale(0.8); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* 4. 基本淡入與彈跳 */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.3); opacity: 0; }
+      80% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .animate-fade { animation: fadeIn 0.8s ease-out forwards; opacity: 0; }
+    .animate-pop { animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
   </style>
 </head>
 <body class="min-h-screen bg-slate-50 font-sans text-slate-800 p-4 md:p-8">
 
-  <div class="max-w-4xl mx-auto flex flex-col gap-6">
-    
-    <header class="bg-white rounded-3xl p-6 md:p-8 shadow-md border-b-8 border-yellow-400 text-center">
-      <h1 class="text-3xl md:text-5xl font-black text-slate-800 flex items-center justify-center">
+  <div class="max-w-5xl mx-auto flex flex-col gap-6">
+    <header class="bg-white rounded-3xl p-6 md:p-8 shadow-md border-b-8 border-yellow-400 text-center relative overflow-hidden">
+      <div class="absolute -top-10 -left-10 w-32 h-32 bg-yellow-100 rounded-full opacity-50"></div>
+      <div class="absolute -bottom-10 -right-10 w-40 h-40 bg-blue-100 rounded-full opacity-50"></div>
+      
+      <h1 class="text-3xl md:text-5xl font-black text-slate-800 flex items-center justify-center relative z-10">
         ✨ 異分母分數大小比較 <span class="text-yellow-500 ml-2">小學堂</span> ✨
       </h1>
-      <p class="mt-4 text-slate-500 font-bold text-lg">
-        不要用通分的方法比比看，按下「解題」看圖解動畫喔！
+      <p class="mt-4 text-slate-500 font-bold text-lg relative z-10">
+        不要用通分的方法比比看，按下「解題」看圖形怎麼畫出來的！
       </p>
+
+      <div class="mt-8 flex flex-wrap justify-center gap-3 relative z-10" id="tab-buttons">
+        <button onclick="switchTab(1)" class="tab-btn active px-6 py-2 rounded-full font-bold text-lg border-2 border-indigo-500 bg-indigo-500 text-white shadow-md transition-all hover:scale-105 active:scale-95">第一題</button>
+        <button onclick="switchTab(2)" class="tab-btn px-6 py-2 rounded-full font-bold text-lg border-2 border-emerald-500 bg-white text-emerald-500 shadow-sm transition-all hover:scale-105 active:scale-95">第二題</button>
+        <button onclick="switchTab(3)" class="tab-btn px-6 py-2 rounded-full font-bold text-lg border-2 border-amber-500 bg-white text-amber-500 shadow-sm transition-all hover:scale-105 active:scale-95">第三題</button>
+        <button onclick="switchTab(4)" class="tab-btn px-6 py-2 rounded-full font-bold text-lg border-2 border-rose-500 bg-white text-rose-500 shadow-sm transition-all hover:scale-105 active:scale-95">第四題</button>
+      </div>
     </header>
 
-    <!-- ================= 第一題 ================= -->
-    <section class="bg-white rounded-3xl p-6 shadow-xl border-4 border-indigo-100">
-      <div class="flex items-center justify-between mb-4">
+    <section id="tab-1" class="tab-content active bg-white rounded-3xl p-6 shadow-xl border-4 border-indigo-100">
+      <div class="flex items-center justify-between mb-6 border-b-2 border-indigo-50 pb-4">
         <h2 class="text-2xl font-black text-indigo-600 bg-indigo-100 px-4 py-1 rounded-full">第一題</h2>
-        <button onclick="solve(1, '<')" class="flex items-center bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-6 rounded-full shadow-lg transition-transform active:scale-95">
+        <button onclick="solve(1, '<')" class="flex items-center bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-6 rounded-full shadow-lg transition-transform active:scale-95 text-lg">
           💡 解題
         </button>
       </div>
 
       <div class="flex flex-col items-center">
-        <div class="flex items-center justify-center mb-4">
-          <!-- 分數 1/18 -->
-          <div class="flex flex-col items-center justify-center font-bold mx-2 text-2xl">
-            <span class="border-b-[3px] border-black w-full text-center px-1 pb-1">1</span>
-            <span class="text-center px-1 pt-1">18</span>
+        <!-- 題目直立分數 -->
+        <div class="flex items-center justify-center mb-6">
+          <div class="inline-flex flex-col items-center text-4xl font-bold mx-4">
+            <span class="border-b-4 border-black w-full text-center pb-1">1</span>
+            <span class="pt-1">18</span>
           </div>
-          <!-- 比較框 -->
-          <div id="box-1" class="w-16 h-16 border-4 border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-white mx-4 shadow-inner">
-            <span class="text-3xl text-gray-300">?</span>
+          <div id="box-1" class="w-20 h-20 border-4 border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-white shadow-inner transition-colors duration-300">
+            <span class="text-4xl text-gray-300">?</span>
           </div>
-          <!-- 分數 1/8 -->
-          <div class="flex flex-col items-center justify-center font-bold mx-2 text-2xl">
-            <span class="border-b-[3px] border-black w-full text-center px-1 pb-1">1</span>
-            <span class="text-center px-1 pt-1">8</span>
+          <div class="inline-flex flex-col items-center text-4xl font-bold mx-4">
+            <span class="border-b-4 border-black w-full text-center pb-1">1</span>
+            <span class="pt-1">8</span>
           </div>
         </div>
 
-        <!-- 解答動畫區塊 -->
         <div id="solution-1" class="solution-container w-full overflow-hidden max-h-0 opacity-0 mt-0">
-          <div class="flex items-center justify-around bg-indigo-50 rounded-2xl p-6 border-2 border-indigo-100">
+          <div class="flex flex-col md:flex-row items-center justify-around bg-indigo-50 rounded-2xl p-6 border-2 border-indigo-100 gap-6">
             <div class="flex flex-col items-center">
-              <div id="p1-chart1"></div>
-              <p class="mt-4 text-indigo-800 font-bold bg-white px-3 py-1 rounded-full text-sm shadow">分成18份，只拿1份</p>
+              <div id="p1-chart1" class="w-40 h-40"></div>
+              <p class="mt-4 text-indigo-800 font-bold bg-white px-4 py-2 rounded-full shadow animate-fade" style="animation-delay: 2.5s;">分成18份，只拿1份</p>
             </div>
-            <div class="flex flex-col justify-center items-center text-gray-500 font-bold px-4 text-center">
-              <p>分子相同時</p>
-              <p>分母越大，分得越碎</p>
-              <p class="text-indigo-600 mt-2 bg-indigo-100 px-3 py-1 rounded">所以每一份就越小喔！</p>
+            <div class="flex flex-col justify-center items-center text-gray-600 font-bold px-4 text-lg text-center animate-fade" style="animation-delay: 3s;">
+              <p>分子都是 1 時</p>
+              <p>分母越大代表切得越碎</p>
+              <p class="text-indigo-600 mt-2 bg-indigo-100 px-4 py-2 rounded-lg border border-indigo-200">所以每一片就越小喔！</p>
             </div>
             <div class="flex flex-col items-center">
-              <div id="p1-chart2"></div>
-              <p class="mt-4 text-orange-800 font-bold bg-white px-3 py-1 rounded-full text-sm shadow">分成8份，拿1份</p>
+              <div id="p1-chart2" class="w-40 h-40"></div>
+              <p class="mt-4 text-orange-800 font-bold bg-white px-4 py-2 rounded-full shadow animate-fade" style="animation-delay: 2.5s;">分成8份，拿1份</p>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- ================= 第二題 ================= -->
-    <section class="bg-white rounded-3xl p-6 shadow-xl border-4 border-emerald-100">
-      <div class="flex items-center justify-between mb-4">
+    <section id="tab-2" class="tab-content bg-white rounded-3xl p-6 shadow-xl border-4 border-emerald-100">
+      <div class="flex items-center justify-between mb-6 border-b-2 border-emerald-50 pb-4">
         <h2 class="text-2xl font-black text-emerald-600 bg-emerald-100 px-4 py-1 rounded-full">第二題</h2>
-        <button onclick="solve(2, '>')" class="flex items-center bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-6 rounded-full shadow-lg transition-transform active:scale-95">
+        <button onclick="solve(2, '>')" class="flex items-center bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2 px-6 rounded-full shadow-lg transition-transform active:scale-95 text-lg">
           💡 解題
         </button>
       </div>
 
       <div class="flex flex-col items-center">
-        <div class="flex items-center justify-center mb-4">
-          <!-- 分數 11/10 -->
-          <div class="flex flex-col items-center justify-center font-bold mx-2 text-2xl">
-            <span class="border-b-[3px] border-black w-full text-center px-1 pb-1">11</span>
-            <span class="text-center px-1 pt-1">10</span>
+        <div class="flex items-center justify-center mb-6">
+          <div class="inline-flex flex-col items-center text-4xl font-bold mx-4">
+            <span class="border-b-4 border-black w-full text-center pb-1">11</span><span class="pt-1">10</span>
           </div>
-          <!-- 比較框 -->
-          <div id="box-2" class="w-16 h-16 border-4 border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-white mx-4 shadow-inner">
-            <span class="text-3xl text-gray-300">?</span>
+          <div id="box-2" class="w-20 h-20 border-4 border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-white shadow-inner transition-colors duration-300">
+            <span class="text-4xl text-gray-300">?</span>
           </div>
-          <!-- 分數 26/25 -->
-          <div class="flex flex-col items-center justify-center font-bold mx-2 text-2xl">
-            <span class="border-b-[3px] border-black w-full text-center px-1 pb-1">26</span>
-            <span class="text-center px-1 pt-1">25</span>
+          <div class="inline-flex flex-col items-center text-4xl font-bold mx-4">
+            <span class="border-b-4 border-black w-full text-center pb-1">26</span><span class="pt-1">25</span>
           </div>
         </div>
 
         <div id="solution-2" class="solution-container w-full overflow-hidden max-h-0 opacity-0 mt-0">
           <div class="flex flex-col items-center bg-emerald-50 rounded-2xl p-6 border-2 border-emerald-100">
             <!-- 帶分數轉換顯示 -->
-            <div class="flex items-center justify-between w-full max-w-lg mb-8 px-8 bg-white py-4 rounded-xl shadow-sm border border-emerald-200">
+            <div class="animate-fade flex flex-col sm:flex-row items-center justify-center w-full gap-8 mb-8 bg-white p-6 rounded-xl shadow-sm border border-emerald-200" style="animation-delay: 0.5s;">
                <div class="flex items-center text-emerald-700">
-                 <div class="flex flex-col items-center justify-center font-bold mx-1 text-xl"><span class="border-b-[2px] border-emerald-700 w-full text-center px-1 pb-1">11</span><span>10</span></div>
-                 <span class="mx-2 font-black text-2xl">=</span>
-                 <div class="flex items-center font-bold mx-1 text-xl">
-                   <span class="mr-1 mt-1 text-2xl">1</span>
-                   <div class="flex flex-col items-center justify-center"><span class="border-b-[2px] border-emerald-700 w-full text-center px-1 pb-1 text-lg">1</span><span class="text-lg">10</span></div>
+                 <div class="inline-flex flex-col items-center text-2xl font-bold mx-2">
+                   <span class="border-b-[3px] border-emerald-700 w-full text-center pb-1">11</span><span>10</span>
+                 </div>
+                 <span class="mx-3 font-black text-3xl">=</span>
+                 <div class="flex items-center font-bold bg-emerald-100 px-3 py-2 rounded-lg border border-emerald-200">
+                   <span class="text-4xl mr-2">1</span>
+                   <div class="inline-flex flex-col items-center text-xl"><span class="border-b-[3px] border-emerald-700 w-full text-center pb-1">1</span><span>10</span></div>
                  </div>
                </div>
-               <div class="flex items-center text-emerald-700">
-                 <div class="flex flex-col items-center justify-center font-bold mx-1 text-xl"><span class="border-b-[2px] border-emerald-700 w-full text-center px-1 pb-1">26</span><span>25</span></div>
-                 <span class="mx-2 font-black text-2xl">=</span>
-                 <div class="flex items-center font-bold mx-1 text-xl">
-                   <span class="mr-1 mt-1 text-2xl">1</span>
-                   <div class="flex flex-col items-center justify-center"><span class="border-b-[2px] border-emerald-700 w-full text-center px-1 pb-1 text-lg">1</span><span class="text-lg">25</span></div>
+               <div class="flex items-center text-pink-700">
+                 <div class="inline-flex flex-col items-center text-2xl font-bold mx-2">
+                   <span class="border-b-[3px] border-pink-700 w-full text-center pb-1">26</span><span>25</span>
+                 </div>
+                 <span class="mx-3 font-black text-3xl">=</span>
+                 <div class="flex items-center font-bold bg-pink-100 px-3 py-2 rounded-lg border border-pink-200">
+                   <span class="text-4xl mr-2">1</span>
+                   <div class="inline-flex flex-col items-center text-xl"><span class="border-b-[3px] border-pink-700 w-full text-center pb-1">1</span><span>25</span></div>
                  </div>
                </div>
             </div>
 
-            <!-- 圓形比較 -->
-            <div class="flex flex-col md:flex-row items-center justify-around w-full gap-6">
+            <!-- 圓形動畫區 -->
+            <div class="flex flex-col md:flex-row items-center justify-around w-full gap-8">
               <div class="flex flex-col items-center">
                 <div class="flex gap-2">
-                  <div id="p2-chart1-full"></div>
-                  <div id="p2-chart1-part"></div>
+                  <div id="p2-chart1-full" class="w-28 h-28 sm:w-36 sm:h-36"></div>
+                  <div id="p2-chart1-part" class="w-28 h-28 sm:w-36 sm:h-36"></div>
                 </div>
-                <p class="mt-4 text-emerald-800 font-bold bg-white px-3 py-1 rounded-full text-sm shadow text-center">1個完整的圓 <br/>+ 1/10個圓</p>
+                <p class="mt-6 text-emerald-800 font-bold bg-white px-5 py-2 rounded-xl shadow border border-emerald-200 animate-fade text-center text-lg" style="animation-delay: 3s;">1 個完整的圓 <br/>+ <span class="text-emerald-500 text-xl font-black">1/10</span> 個圓</p>
               </div>
               <div class="flex flex-col items-center">
                 <div class="flex gap-2">
-                  <div id="p2-chart2-full"></div>
-                  <div id="p2-chart2-part"></div>
+                  <div id="p2-chart2-full" class="w-28 h-28 sm:w-36 sm:h-36"></div>
+                  <div id="p2-chart2-part" class="w-28 h-28 sm:w-36 sm:h-36"></div>
                 </div>
-                <p class="mt-4 text-pink-800 font-bold bg-white px-3 py-1 rounded-full text-sm shadow text-center">1個完整的圓 <br/>+ 1/25個圓</p>
+                <p class="mt-6 text-pink-800 font-bold bg-white px-5 py-2 rounded-xl shadow border border-pink-200 animate-fade text-center text-lg" style="animation-delay: 3s;">1 個完整的圓 <br/>+ <span class="text-pink-500 text-xl font-black">1/25</span> 個圓</p>
               </div>
             </div>
           </div>
@@ -145,62 +187,56 @@
       </div>
     </section>
 
-    <!-- ================= 第三題 ================= -->
-    <section class="bg-white rounded-3xl p-6 shadow-xl border-4 border-amber-100">
-      <div class="flex items-center justify-between mb-4">
+    <section id="tab-3" class="tab-content bg-white rounded-3xl p-6 shadow-xl border-4 border-amber-100">
+      <div class="flex items-center justify-between mb-6 border-b-2 border-amber-50 pb-4">
         <h2 class="text-2xl font-black text-amber-600 bg-amber-100 px-4 py-1 rounded-full">第三題</h2>
-        <button onclick="solve(3, '<')" class="flex items-center bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-6 rounded-full shadow-lg transition-transform active:scale-95">
+        <button onclick="solve(3, '<')" class="flex items-center bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-6 rounded-full shadow-lg transition-transform active:scale-95 text-lg">
           💡 解題
         </button>
       </div>
 
       <div class="flex flex-col items-center">
-        <div class="flex items-center justify-center mb-4">
-          <!-- 分數 6/7 -->
-          <div class="flex flex-col items-center justify-center font-bold mx-2 text-2xl">
-            <span class="border-b-[3px] border-black w-full text-center px-1 pb-1">6</span>
-            <span class="text-center px-1 pt-1">7</span>
+        <div class="flex items-center justify-center mb-6">
+          <div class="inline-flex flex-col items-center text-4xl font-bold mx-4">
+            <span class="border-b-4 border-black w-full text-center pb-1">6</span><span class="pt-1">7</span>
           </div>
-          <!-- 比較框 -->
-          <div id="box-3" class="w-16 h-16 border-4 border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-white mx-4 shadow-inner">
-            <span class="text-3xl text-gray-300">?</span>
+          <div id="box-3" class="w-20 h-20 border-4 border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-white shadow-inner transition-colors duration-300">
+            <span class="text-4xl text-gray-300">?</span>
           </div>
-          <!-- 分數 35/36 -->
-          <div class="flex flex-col items-center justify-center font-bold mx-2 text-2xl">
-            <span class="border-b-[3px] border-black w-full text-center px-1 pb-1">35</span>
-            <span class="text-center px-1 pt-1">36</span>
+          <div class="inline-flex flex-col items-center text-4xl font-bold mx-4">
+            <span class="border-b-4 border-black w-full text-center pb-1">35</span><span class="pt-1">36</span>
           </div>
         </div>
 
         <div id="solution-3" class="solution-container w-full overflow-hidden max-h-0 opacity-0 mt-0">
           <div class="flex flex-col items-center bg-amber-50 rounded-2xl p-6 border-2 border-amber-200">
-            <!-- 圓形圖 -->
-            <div class="flex items-center justify-around w-full mb-8">
+            <div class="flex flex-col md:flex-row items-center justify-around w-full mb-8 gap-8">
               <div class="flex flex-col items-center">
-                <div id="p3-chart1"></div>
-                <p class="mt-4 text-blue-800 font-bold bg-white px-3 py-1 rounded-full text-sm shadow">塗色6份 (差1份滿)</p>
+                <div id="p3-chart1" class="w-40 h-40"></div>
+                <p class="mt-4 text-blue-800 font-bold bg-white px-4 py-2 rounded-full shadow animate-fade text-lg" style="animation-delay: 2s;">塗滿 6 份 (差1份滿)</p>
               </div>
               <div class="flex flex-col items-center">
-                <div id="p3-chart2"></div>
-                <p class="mt-4 text-yellow-800 font-bold bg-white px-3 py-1 rounded-full text-sm shadow">塗色35份 (差1份滿)</p>
+                <div id="p3-chart2" class="w-40 h-40"></div>
+                <p class="mt-4 text-yellow-800 font-bold bg-white px-4 py-2 rounded-full shadow animate-fade text-lg" style="animation-delay: 2.5s;">塗滿 35 份 (差1份滿)</p>
               </div>
             </div>
 
-            <!-- 放大鏡比較缺口 -->
-            <div class="w-full bg-white rounded-2xl p-4 border border-amber-200 shadow-inner relative mt-6">
-              <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-amber-500 text-white px-4 py-1 rounded-full font-bold flex items-center shadow">
-                 🔍 放大比較缺口 (相差的 1 份)
+            <!-- 放大鏡缺口比較 -->
+            <div id="p3-magnifier" class="hidden w-full bg-white rounded-2xl p-6 border border-amber-300 shadow-inner relative mt-6 animate-fade" style="animation-delay: 3s;">
+              <div class="absolute -top-5 left-1/2 transform -translate-x-1/2 bg-amber-500 text-white px-6 py-2 rounded-full font-bold flex items-center shadow-lg text-lg">
+                 🔍 放大比較剩下的「缺口」
               </div>
-              <div class="flex justify-around items-end pt-8 pb-4">
-                 <div id="p3-mag1"></div>
+              <div class="flex flex-col md:flex-row justify-around items-center pt-8 pb-4 gap-8">
+                 <div id="p3-mag1" class="w-48 h-48"></div>
                  
-                 <div class="flex flex-col items-center px-4 max-w-[220px] text-center text-amber-700 font-bold">
-                   <p>1/7 的缺口 <span class="text-amber-500 text-xl font-black">大於</span> 1/36 的缺口</p>
-                   <div class="my-3 text-amber-400 font-black text-2xl">➔</div>
-                   <p class="bg-amber-100 px-2 py-1 rounded">缺口越大，代表<br/>剩下的分數越小！</p>
+                 <div class="flex flex-col items-center px-4 max-w-[280px] text-center text-amber-800 font-bold animate-fade" style="animation-delay: 4.5s;">
+                   <p class="text-xl">1/7 的缺口 <span class="text-amber-600 text-3xl font-black align-middle mx-2">大於</span> 1/36</p>
+                   <div class="hidden md:block my-4 text-amber-400 font-black text-4xl">➔</div>
+                   <div class="md:hidden my-2 text-amber-400 font-black text-4xl">⬇</div>
+                   <p class="bg-amber-100 px-4 py-3 rounded-xl border-2 border-amber-300 text-lg">缺口越大，代表<br/><span class="text-rose-600">真正塗色的部分越小！</span></p>
                  </div>
 
-                 <div id="p3-mag2"></div>
+                 <div id="p3-mag2" class="w-48 h-48"></div>
               </div>
             </div>
           </div>
@@ -208,53 +244,106 @@
       </div>
     </section>
 
-    <!-- ================= 第四題 ================= -->
-    <section class="bg-white rounded-3xl p-6 shadow-xl border-4 border-rose-100 mb-8">
-      <div class="flex items-center justify-between mb-4">
+    <section id="tab-4" class="tab-content bg-white rounded-3xl p-6 shadow-xl border-4 border-rose-100 mb-8">
+      <div class="flex items-center justify-between mb-6 border-b-2 border-rose-50 pb-4">
         <h2 class="text-2xl font-black text-rose-600 bg-rose-100 px-4 py-1 rounded-full">第四題</h2>
-        <button onclick="solve(4, '<')" class="flex items-center bg-rose-500 hover:bg-rose-600 text-white font-bold py-2 px-6 rounded-full shadow-lg transition-transform active:scale-95">
+        <button onclick="solve(4, '<')" class="flex items-center bg-rose-500 hover:bg-rose-600 text-white font-bold py-2 px-6 rounded-full shadow-lg transition-transform active:scale-95 text-lg">
           💡 解題
         </button>
       </div>
 
       <div class="flex flex-col items-center">
-        <div class="flex items-center justify-center mb-4">
-          <!-- 分數 19/44 -->
-          <div class="flex flex-col items-center justify-center font-bold mx-2 text-2xl">
-            <span class="border-b-[3px] border-black w-full text-center px-1 pb-1">19</span>
-            <span class="text-center px-1 pt-1">44</span>
+        <div class="flex items-center justify-center mb-6">
+          <div class="inline-flex flex-col items-center text-4xl font-bold mx-4">
+            <span class="border-b-4 border-black w-full text-center pb-1">19</span><span class="pt-1">44</span>
           </div>
-          <!-- 比較框 -->
-          <div id="box-4" class="w-16 h-16 border-4 border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-white mx-4 shadow-inner">
-            <span class="text-3xl text-gray-300">?</span>
+          <div id="box-4" class="w-20 h-20 border-4 border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-white shadow-inner transition-colors duration-300">
+            <span class="text-4xl text-gray-300">?</span>
           </div>
-          <!-- 分數 15/24 -->
-          <div class="flex flex-col items-center justify-center font-bold mx-2 text-2xl">
-            <span class="border-b-[3px] border-black w-full text-center px-1 pb-1">15</span>
-            <span class="text-center px-1 pt-1">24</span>
+          <div class="inline-flex flex-col items-center text-4xl font-bold mx-4">
+            <span class="border-b-4 border-black w-full text-center pb-1">15</span><span class="pt-1">24</span>
           </div>
         </div>
 
         <div id="solution-4" class="solution-container w-full overflow-hidden max-h-0 opacity-0 mt-0">
           <div class="flex flex-col items-center bg-rose-50 rounded-2xl p-6 border-2 border-rose-200">
-            <p class="text-rose-800 font-bold mb-4 bg-white px-4 py-2 rounded-full shadow-sm text-lg">
-              把圓形拆解，平鋪成一列來比長度！(基準線：1/2)
-            </p>
-
-            <div class="w-full overflow-x-auto bg-white p-4 rounded-xl shadow-inner border border-rose-100 flex justify-center">
-               <div id="p4-chart" class="min-w-[600px] w-full max-w-[800px]"></div>
+            
+            <div id="p4-pies-container" class="flex flex-col w-full items-center mb-8">
+               <p class="text-rose-800 font-bold mb-6 bg-white px-5 py-2 rounded-full shadow border border-rose-100 text-lg animate-fade">
+                 先畫出圓形，但是切太細了很難比較對不對？
+               </p>
+               <div class="flex items-center justify-around w-full gap-8 max-w-xl">
+                 <div class="flex flex-col items-center">
+                   <div id="p4-pie1" class="w-40 h-40"></div>
+                 </div>
+                 <div class="flex flex-col items-center">
+                   <div id="p4-pie2" class="w-40 h-40"></div>
+                 </div>
+               </div>
             </div>
 
-            <div class="mt-6 flex flex-col items-center bg-white p-4 rounded-xl border border-rose-200 shadow-sm text-rose-900 font-bold text-center">
-               <p>一半的量：44 份的一半是 22 份；24 份的一半是 12 份。</p>
-               <p class="mt-2">
-                 <span class="text-rose-500">19/44 不到一半 (19 < 22)</span>，而 
-                 <span class="text-sky-500">15/24 超過一半 (15 > 12)</span>
-               </p>
-               <p class="mt-3 text-xl text-rose-600 bg-rose-100 px-6 py-2 rounded-lg border border-rose-300 shadow-sm">
-                 所以 19/44 &lt; 15/24
-               </p>
+            <!-- 平鋪展開區塊 -->
+            <div id="p4-flat-container" class="hidden w-full flex-col items-center animate-fade">
+              <div class="flex items-center gap-4 mb-6">
+                 <span class="text-3xl animate-bounce">⬇</span>
+                 <p class="text-rose-800 font-bold bg-white px-6 py-3 rounded-2xl shadow-md text-xl border-2 border-rose-300">
+                   我們把它們拆開，<span class="text-rose-600 font-black">排成一直線</span>來跟「一半(1/2)」比長度！
+                 </p>
+                 <span class="text-3xl animate-bounce">⬇</span>
+              </div>
+
+              <!-- 針對問題修正的平鋪動畫容器 -->
+              <div class="w-full overflow-x-auto bg-white p-6 rounded-2xl shadow-inner border-2 border-rose-100 flex justify-center mb-8">
+                 <div id="p4-chart" class="w-full max-w-[800px]"></div>
+              </div>
+
+              <!-- 第四題超大直立分數解說區 -->
+              <div class="w-full bg-white p-8 rounded-2xl border-4 border-rose-200 shadow-lg text-center flex flex-col items-center">
+                 <h3 class="text-2xl font-black text-rose-800 mb-6 bg-rose-100 px-6 py-2 rounded-full">比較結果大解析</h3>
+                 
+                 <div class="flex flex-col md:flex-row items-center justify-center gap-10 w-full mb-8">
+                    <!-- 19/44 解說 -->
+                    <div class="flex flex-col items-center bg-rose-50 p-6 rounded-xl border-2 border-rose-100 w-full md:w-1/2">
+                       <div class="inline-flex flex-col items-center text-5xl font-black text-rose-700 mb-4">
+                         <span class="border-b-4 border-rose-700 w-full text-center pb-2">19</span><span class="pt-2">44</span>
+                       </div>
+                       <p class="text-2xl font-bold text-gray-700 mt-2">
+                         44 份的一半是 <span class="text-rose-600">22 份</span>
+                       </p>
+                       <p class="text-3xl font-black text-rose-600 mt-4 bg-white px-4 py-2 rounded-lg border border-rose-200 shadow-sm">
+                         19不到一半！
+                       </p>
+                    </div>
+
+                    <!-- 15/24 解說 -->
+                    <div class="flex flex-col items-center bg-sky-50 p-6 rounded-xl border-2 border-sky-100 w-full md:w-1/2">
+                       <div class="inline-flex flex-col items-center text-5xl font-black text-sky-700 mb-4">
+                         <span class="border-b-4 border-sky-700 w-full text-center pb-2">15</span><span class="pt-2">24</span>
+                       </div>
+                       <p class="text-2xl font-bold text-gray-700 mt-2">
+                         24 份的一半是 <span class="text-sky-600">12 份</span>
+                       </p>
+                       <p class="text-3xl font-black text-sky-600 mt-4 bg-white px-4 py-2 rounded-lg border border-sky-200 shadow-sm">
+                         15超過一半！
+                       </p>
+                    </div>
+                 </div>
+
+                 <!-- 最終結論 -->
+                 <div class="flex items-center justify-center bg-rose-600 text-white px-8 py-4 rounded-2xl shadow-xl animate-pop" style="animation-delay: 5s;">
+                   <span class="text-3xl font-bold mr-6">所以：</span>
+                   <div class="inline-flex flex-col items-center text-4xl font-black mx-2">
+                     <span class="border-b-4 border-white w-full text-center pb-1">19</span><span class="pt-1">44</span>
+                   </div>
+                   <span class="text-5xl font-black mx-6 text-yellow-300">&lt;</span>
+                   <div class="inline-flex flex-col items-center text-4xl font-black mx-2">
+                     <span class="border-b-4 border-white w-full text-center pb-1">15</span><span class="pt-1">24</span>
+                   </div>
+                 </div>
+
+              </div>
             </div>
+
           </div>
         </div>
       </div>
@@ -263,153 +352,198 @@
   </div>
 
   <script>
-    // ================= 輔助數學函數 =================
-    // 極座標轉直角座標 (為 SVG 畫弧線使用)
-    function polarToCartesian(cx, cy, r, angleInDegrees) {
-      // 減 90 度讓 0 度從時鐘的 12 點鐘方向開始
-      var angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
-      return {
-        x: cx + (r * Math.cos(angleInRadians)),
-        y: cy + (r * Math.sin(angleInRadians))
-      };
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.getElementById(`tab-${tabId}`).classList.add('active');
+      const colors = ['indigo', 'emerald', 'amber', 'rose'];
+      document.querySelectorAll('.tab-btn').forEach((btn, index) => {
+        const c = colors[index];
+        if (index + 1 === tabId) {
+          btn.className = `tab-btn active px-6 py-2 rounded-full font-bold text-lg border-2 shadow-md transition-all border-${c}-500 bg-${c}-500 text-white transform scale-105`;
+        } else {
+          btn.className = `tab-btn px-6 py-2 rounded-full font-bold text-lg border-2 shadow-sm transition-all hover:scale-105 hover:bg-${c}-50 border-${c}-500 bg-white text-${c}-500`;
+        }
+      });
     }
 
-    // 計算 SVG 的 Arc 路徑 (d 屬性)
-    function describeArc(x, y, radius, startAngle, endAngle) {
-      var start = polarToCartesian(x, y, radius, endAngle);
-      var end = polarToCartesian(x, y, radius, startAngle);
-      var largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+    // 極座標轉直角座標
+    function polarToCartesian(cx, cy, r, angleInDegrees) {
+      const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+      return { x: cx + r * Math.cos(angleInRadians), y: cy + r * Math.sin(angleInRadians) };
+    }
+
+    // 產生單一片扇形的路徑 (Wedge)
+    function describeWedge(x, y, radius, startAngle, endAngle) {
+      const start = polarToCartesian(x, y, radius, endAngle);
+      const end = polarToCartesian(x, y, radius, startAngle);
+      const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
       return [
-        "M", start.x, start.y,
+        "M", x, y,
+        "L", start.x, start.y,
         "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y,
-        "L", x, y,
         "Z"
       ].join(" ");
     }
 
-    // ================= SVG 產生器 =================
-    // 產生圓形派圖 SVG
-    function getPieChartSVG(num, den, color, emptyColor="#f3f4f6", radius=80) {
-      const cx = 100, cy = 100;
-      const angle = (num / den) * 360;
-      let lines = '';
+    // 產生動態畫出、一片片拼湊的圓形 SVG
+    function getAnimatedPieSVG(num, den, color, delayOffset = 0, emptyColor="#f8fafc") {
+      const cx = 100, cy = 100, r = 80;
+      let svg = `<svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-md">`;
       
-      // 畫分割線
+      // 1. 動態畫出底圓邊框
+      svg += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${emptyColor}" stroke="#cbd5e1" stroke-width="2" class="draw-circle" style="animation-delay: ${delayOffset}s;" />`;
+
+      // 2. 切線格線 (淡入)
       for (let i = 0; i < den; i++) {
         let a = i * (360 / den);
-        let pt = polarToCartesian(cx, cy, radius, a);
-        lines += `<line x1="${cx}" y1="${cy}" x2="${pt.x}" y2="${pt.y}" stroke="#9ca3af" stroke-width="1.5"/>`;
+        let pt = polarToCartesian(cx, cy, r, a);
+        svg += `<line x1="${cx}" y1="${cy}" x2="${pt.x}" y2="${pt.y}" stroke="#cbd5e1" stroke-width="1" style="opacity:0; animation: fadeIn 0.5s forwards ${delayOffset + 1}s;" />`;
       }
 
-      let path = '';
-      if (num > 0 && num < den) {
-        path = `<path d="${describeArc(cx, cy, radius, 0, angle)}" fill="${color}"/>`;
-      } else if (num === den) {
-        path = `<circle cx="${cx}" cy="${cy}" r="${radius}" fill="${color}"/>`;
+      // 3. 依序拼湊實體扇形
+      // 為了不要讓動畫等太久，總拼湊時間控制在最多 1.5 秒內
+      const totalAssembleTime = 1.5;
+      const stepDelay = totalAssembleTime / Math.max(num, 1); 
+
+      for (let i = 0; i < num; i++) {
+        const startA = i * (360 / den);
+        const endA = (i + 1) * (360 / den);
+        const path = describeWedge(cx, cy, r, startA, endA);
+        const animDelay = delayOffset + 1.2 + (i * stepDelay);
+        svg += `<path d="${path}" fill="${color}" stroke="white" stroke-width="0.5" style="opacity:0; transform-origin: ${cx}px ${cy}px; animation: assembleSlice 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards ${animDelay}s;" />`;
       }
 
-      return `
-        <svg viewBox="0 0 200 200" class="w-32 h-32 drop-shadow-md">
-          <circle cx="${cx}" cy="${cy}" r="${radius}" fill="${emptyColor}" stroke="#6b7280" stroke-width="2"/>
-          ${path}
-          ${lines}
-          <circle cx="${cx}" cy="${cy}" r="${radius}" fill="none" stroke="#4b5563" stroke-width="3"/>
-        </svg>
-      `;
+      // 4. 最後畫上較深的外框修飾
+      svg += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#64748b" stroke-width="3" style="opacity:0; animation: fadeIn 0.5s forwards ${delayOffset + 2.5}s;" />`;
+      
+      svg += `</svg>`;
+      return svg;
     }
 
-    // 產生放大鏡內單一扇形的 SVG (方向朝上)
-    function getMagnifiedSectorSVG(num, den, color, label) {
-      const radius = 80;
+    // 產生放大鏡缺口
+    function getMagSectorSVG(num, den, color, label, delaySec) {
       const angle = (num / den) * 360;
-      const rotate = -angle / 2; // 旋轉讓扇形正中朝上
-      
+      const path = describeWedge(100, 100, 80, 0, angle);
+      // 旋轉讓缺口朝上
+      const rotate = -angle / 2; 
       return `
-        <div class="flex flex-col items-center relative">
-          <svg viewBox="0 0 200 200" class="w-40 h-40 drop-shadow-lg">
-             <circle cx="100" cy="100" r="${radius}" fill="none" stroke="#d1d5db" stroke-width="2" stroke-dasharray="4 4"/>
+        <div class="flex flex-col items-center relative w-full h-full animate-pop" style="animation-delay: ${delaySec}s; opacity: 0;">
+          <svg viewBox="0 0 200 200" class="w-full h-full drop-shadow-xl">
+             <circle cx="100" cy="100" r="80" fill="none" stroke="#94a3b8" stroke-width="3" stroke-dasharray="6 6"/>
              <g transform="rotate(${rotate}, 100, 100)">
-               <path d="${describeArc(100, 100, radius, 0, angle)}" fill="${color}" stroke="#374151" stroke-width="2" />
+               <path d="${path}" fill="${color}" stroke="#475569" stroke-width="2" />
              </g>
           </svg>
-          <div class="absolute -bottom-2 bg-yellow-300 text-yellow-900 font-black px-4 py-1 rounded-full shadow-md text-lg border-2 border-yellow-400">
+          <div class="absolute -bottom-4 bg-yellow-400 text-yellow-900 font-black px-5 py-2 rounded-full shadow-lg text-xl border-4 border-white">
              缺 ${label}
           </div>
         </div>
       `;
     }
 
-    // 產生平鋪陣列長條圖 SVG
-    function getFlatWedgesSVG() {
+    // 產生第四題平鋪長條陣列 (已修正直立式分數重疊問題，改用絕對座標)
+    function getFlatSVG() {
       const W = 600, H = 40;
-      
-      const drawRow = (num, den, active, inactive, yOff) => {
+      const drawRow = (num, den, active, inactive, yOff, baseDelay) => {
         let w = W / den;
-        let wedges = '';
+        let pieces = '';
+        const stepDelay = 1.2 / num; // 最多花 1.2 秒排完一列
         for (let i = 0; i < den; i++) {
           let x = i * w;
-          let isColored = i < num;
-          let color = isColored ? active : inactive;
-          // 畫一個類似切平的扇形(等腰三角形)
-          wedges += `<path d="M ${x + w/2} ${H} L ${x} 5 Q ${x + w/2} 0 ${x + w} 5 Z" fill="${color}" stroke="#9ca3af" stroke-width="0.5" />`;
+          let color = i < num ? active : inactive;
+          let strokeColor = i < num ? "white" : "#94a3b8";
+          let strokeW = "0.5";
+          let anim = i < num 
+            ? `animation: dropWedge 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards ${baseDelay + (i * stepDelay)}s; opacity: 0;`
+            : `animation: fadeIn 0.5s forwards ${baseDelay}s; opacity: 0;`;
+          
+          pieces += `<path d="M ${x + w/2} ${H} L ${x} 5 Q ${x + w/2} 0 ${x + w} 5 Z" fill="${color}" stroke="${strokeColor}" stroke-width="${strokeW}" style="${anim}" />`;
         }
-        return `<g transform="translate(0, ${yOff})">${wedges}</g>`;
+        return `<g transform="translate(0, ${yOff})">${pieces}</g>`;
       };
 
+      const drawMarker = (x, y1, y2, color, delay) => {
+        return `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="${color}" stroke-width="3" style="animation: dropWedge 0.4s forwards ${delay}s; opacity: 0; transform-origin: top;" />`;
+      }
+
       return `
-         <svg viewBox="-30 -10 660 160" class="w-full h-auto">
-            <!-- 第一排 19/44 -->
-            ${drawRow(19, 44, "#f43f5e", "#f1f5f9", 10)}
-            <text x="-25" y="35" font-size="14" font-weight="bold" fill="#be123c">19/44</text>
-            <line x1="${(19/44)*W}" y1="10" x2="${(19/44)*W}" y2="50" stroke="#9f1239" stroke-width="2"/>
+         <svg viewBox="-90 -20 740 240" class="w-full h-auto drop-shadow-sm px-2">
+            <!-- 基準線 -->
+            <line x1="${W/2}" y1="-10" x2="${W/2}" y2="180" stroke="#10b981" stroke-width="4" stroke-dasharray="8,6" style="animation: fadeIn 0.5s forwards;" />
+            <circle cx="${W/2}" cy="185" r="6" fill="#10b981" style="animation: fadeIn 0.5s forwards;"/>
+            <text x="${W/2}" y="215" font-size="20" font-weight="bold" fill="#047857" text-anchor="middle" style="animation: fadeIn 0.5s forwards;">1/2 (一半基準線)</text>
+
+            <!-- 19/44 -->
+            ${drawRow(19, 44, "#e11d48", "#f1f5f9", 10, 0.5)}
+            <!-- 修正：直接給予 X, Y 絕對座標，確保對齊第一列 (紅色區塊) -->
+            <g style="animation: fadeIn 0.5s forwards 0.5s; opacity: 0;">
+              <text x="-45" y="20" font-size="18" font-weight="bold" fill="#be123c" text-anchor="middle">19</text>
+              <line x1="-60" y1="26" x2="-30" y2="26" stroke="#be123c" stroke-width="2.5" />
+              <text x="-45" y="44" font-size="18" font-weight="bold" fill="#be123c" text-anchor="middle">44</text>
+            </g>
+            ${drawMarker((19/44)*W, 5, 55, "#9f1239", 0.5 + 1.3)}
             
-            <!-- 第二排 15/24 -->
-            ${drawRow(15, 24, "#0ea5e9", "#f1f5f9", 70)}
-            <text x="-25" y="95" font-size="14" font-weight="bold" fill="#0369a1">15/24</text>
-            <line x1="${(15/24)*W}" y1="70" x2="${(15/24)*W}" y2="110" stroke="#075985" stroke-width="2"/>
-            
-            <!-- 1/2 基準線 -->
-            <line x1="${W/2}" y1="0" x2="${W/2}" y2="120" stroke="#10b981" stroke-width="3" stroke-dasharray="6,6" />
-            <circle cx="${W/2}" cy="125" r="4" fill="#10b981" />
-            <text x="${W/2}" y="145" font-size="16" font-weight="bold" fill="#047857" text-anchor="middle">1/2 (一半基準線)</text>
+            <!-- 15/24 -->
+            ${drawRow(15, 24, "#0284c7", "#f1f5f9", 100, 2.0)}
+            <!-- 修正：直接給予 X, Y 絕對座標，確保對齊第二列 (藍色區塊) -->
+            <g style="animation: fadeIn 0.5s forwards 2.0s; opacity: 0;">
+              <text x="-45" y="110" font-size="18" font-weight="bold" fill="#0369a1" text-anchor="middle">15</text>
+              <line x1="-60" y1="116" x2="-30" y2="116" stroke="#0369a1" stroke-width="2.5" />
+              <text x="-45" y="134" font-size="18" font-weight="bold" fill="#0369a1" text-anchor="middle">24</text>
+            </g>
+            ${drawMarker((15/24)*W, 95, 145, "#075985", 2.0 + 1.3)}
          </svg>
       `;
     }
 
-    // ================= 頁面初始化與按鈕邏輯 =================
-    // 將產生的 SVG 注入到對應的 div 中
-    document.addEventListener("DOMContentLoaded", () => {
-      // 第一題
-      document.getElementById('p1-chart1').innerHTML = getPieChartSVG(1, 18, '#8b5cf6');
-      document.getElementById('p1-chart2').innerHTML = getPieChartSVG(1, 8, '#f97316');
+    function solve(pNum, ans) {
+      const box = document.getElementById(`box-${pNum}`);
+      if (box.dataset.solved === "true") return;
+      box.dataset.solved = "true";
 
-      // 第二題
-      document.getElementById('p2-chart1-full').innerHTML = getPieChartSVG(10, 10, '#10b981');
-      document.getElementById('p2-chart1-part').innerHTML = getPieChartSVG(1, 10, '#10b981');
-      document.getElementById('p2-chart2-full').innerHTML = getPieChartSVG(25, 25, '#ec4899');
-      document.getElementById('p2-chart2-part').innerHTML = getPieChartSVG(1, 25, '#ec4899');
-
-      // 第三題
-      document.getElementById('p3-chart1').innerHTML = getPieChartSVG(6, 7, '#3b82f6');
-      document.getElementById('p3-chart2').innerHTML = getPieChartSVG(35, 36, '#eab308');
-      document.getElementById('p3-mag1').innerHTML = getMagnifiedSectorSVG(1, 7, '#dbeafe', '1/7');
-      document.getElementById('p3-mag2').innerHTML = getMagnifiedSectorSVG(1, 36, '#fef9c3', '1/36');
-
-      // 第四題
-      document.getElementById('p4-chart').innerHTML = getFlatWedgesSVG();
-    });
-
-    // 點擊解題按鈕觸發
-    function solve(problemNum, answer) {
-      // 替換中間的問號為答案，並加上跳動特效
-      const box = document.getElementById(`box-${problemNum}`);
-      box.innerHTML = `<span class="text-4xl font-black text-red-500 animate-bounce">${answer}</span>`;
+      // 替換答案框
+      box.classList.replace('border-gray-300', 'border-yellow-400');
+      box.classList.add('bg-yellow-50');
+      box.innerHTML = `<span class="text-6xl font-black text-red-500 animate-pop inline-block">${ans}</span>`;
       
-      // 展開解題動畫區塊 (透過修改 class 改變 max-height 和 opacity)
-      const solutionContainer = document.getElementById(`solution-${problemNum}`);
-      solutionContainer.classList.remove('max-h-0', 'opacity-0');
-      // 給予一個足夠大的 max-height 讓內容可以展開，並加上 marginTop
-      solutionContainer.classList.add('max-h-[1200px]', 'opacity-100', 'mt-4');
+      const cont = document.getElementById(`solution-${pNum}`);
+      cont.classList.remove('max-h-0', 'opacity-0');
+      cont.classList.add('max-h-[2500px]', 'opacity-100', 'mt-6');
+
+      // 依序啟動各題專屬的圖形渲染
+      if (pNum === 1) {
+        document.getElementById('p1-chart1').innerHTML = getAnimatedPieSVG(1, 18, '#8b5cf6', 0.2);
+        document.getElementById('p1-chart2').innerHTML = getAnimatedPieSVG(1, 8, '#f97316', 0.5);
+      } 
+      else if (pNum === 2) {
+        document.getElementById('p2-chart1-full').innerHTML = getAnimatedPieSVG(10, 10, '#10b981', 0.8);
+        document.getElementById('p2-chart1-part').innerHTML = getAnimatedPieSVG(1, 10, '#10b981', 1.2);
+        
+        document.getElementById('p2-chart2-full').innerHTML = getAnimatedPieSVG(25, 25, '#ec4899', 1.0);
+        document.getElementById('p2-chart2-part').innerHTML = getAnimatedPieSVG(1, 25, '#ec4899', 1.4);
+      }
+      else if (pNum === 3) {
+        document.getElementById('p3-chart1').innerHTML = getAnimatedPieSVG(6, 7, '#3b82f6', 0.2);
+        document.getElementById('p3-chart2').innerHTML = getAnimatedPieSVG(35, 36, '#eab308', 0.5);
+        
+        setTimeout(() => {
+          document.getElementById('p3-magnifier').classList.remove('hidden');
+          document.getElementById('p3-mag1').innerHTML = getMagSectorSVG(1, 7, '#dbeafe', '1/7', 3.5);
+          document.getElementById('p3-mag2').innerHTML = getMagSectorSVG(1, 36, '#fef9c3', '1/36', 4.0);
+        }, 500);
+      }
+      else if (pNum === 4) {
+        document.getElementById('p4-pie1').innerHTML = getAnimatedPieSVG(19, 44, '#f43f5e', 0.2);
+        document.getElementById('p4-pie2').innerHTML = getAnimatedPieSVG(15, 24, '#0ea5e9', 0.5);
+
+        // 圓形畫完後再展開下方平鋪
+        setTimeout(() => {
+          const flatCont = document.getElementById('p4-flat-container');
+          flatCont.classList.remove('hidden');
+          flatCont.classList.add('flex');
+          document.getElementById('p4-chart').innerHTML = getFlatSVG();
+        }, 3500);
+      }
     }
   </script>
 </body>

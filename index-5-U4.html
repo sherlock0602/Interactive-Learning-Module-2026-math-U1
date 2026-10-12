@@ -913,7 +913,8 @@
 
       if (idx === activeObject.correctIndex) {
         if (activeObject.type === 4) {
-          if (Math.random() < 0.05) { // 機率下調至 5%
+          // 修改這裡：新增 currentDifficulty !== 'hard' 條件，確保最後一關不會出現魔法陣
+          if (currentDifficulty !== 'hard' && Math.random() < 0.05) { 
             mapData[activeObject.y][activeObject.x] = 6; 
             logMessage("答對了！寶箱底下居然藏著傳送魔法陣 🌀", 'special');
           } else {

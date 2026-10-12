@@ -26,10 +26,10 @@
     }
     .shake-effect { animation: shake 0.3s ease-in-out; }
     
-    /* 遊戲畫布容器：移除正方形限制，改為寬螢幕填滿 */
+    /* 遊戲畫布容器 */
     .canvas-container {
       width: 100%;
-      max-height: 70vh; /* 確保不超過螢幕高度 */
+      max-height: 70vh;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -41,12 +41,43 @@
       height: 100%;
       max-height: 70vh;
       display: block;
-      object-fit: contain; /* 自動保持長方形比例，不變形 */
+      object-fit: contain; 
       image-rendering: pixelated;
       touch-action: none; 
       cursor: crosshair;
     }
     .glow-text { text-shadow: 0 0 10px currentColor; }
+
+    /* 新增：彩虹文字與幽靈飄過特效 */
+    @keyframes rainbow-flash {
+      0% { color: #ff3333; text-shadow: 0 0 10px #ff3333; }
+      20% { color: #ffcc00; text-shadow: 0 0 10px #ffcc00; }
+      40% { color: #33ff33; text-shadow: 0 0 10px #33ff33; }
+      60% { color: #33ccff; text-shadow: 0 0 10px #33ccff; }
+      80% { color: #cc33ff; text-shadow: 0 0 10px #cc33ff; }
+      100% { color: #ff3333; text-shadow: 0 0 10px #ff3333; }
+    }
+    .rainbow-text {
+      animation: rainbow-flash 0.8s infinite;
+      font-size: 1.25rem;
+      font-weight: 900;
+      text-align: center;
+      padding: 0.5rem;
+      background: rgba(0,0,0,0.3);
+      border-radius: 0.5rem;
+    }
+    
+    @keyframes ghost-float {
+      0% { transform: translate(-150%, 20px) scale(0.8) rotate(-10deg); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translate(350%, -40px) scale(1.5) rotate(15deg); opacity: 0; }
+    }
+    .ghost-animate {
+      animation: ghost-float 3s ease-in-out forwards;
+    }
+    
+    .chest-pop { transform: scale(1.2); transition: transform 0.1s ease-out; }
   </style>
 </head>
 <body class="text-slate-800 antialiased min-h-screen flex flex-col">
@@ -55,7 +86,6 @@
   <header class="bg-amber-500 text-white shadow-md relative z-50">
     <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2">
       <div class="flex items-center gap-3">
-        <!-- 移除了原本的圓圈4與魔法學院字樣 -->
         <h1 class="text-xl md:text-2xl font-black tracking-wide">擴分、約分與通分</h1>
       </div>
       <nav class="flex flex-wrap gap-1 md:gap-2">
@@ -150,7 +180,6 @@
       </div>
       
       <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-6">
-        <!-- 題目選擇區 (多範例) -->
         <div class="flex flex-wrap items-center gap-3 border-b border-slate-100 pb-4">
           <span class="font-bold text-slate-700"><i class="fa-solid fa-book-open text-sky-500"></i> 選擇練習題：</span>
           <div id="reduce-presets" class="flex flex-wrap gap-2">
@@ -163,9 +192,7 @@
           <div class="flex flex-col space-y-4">
             <div class="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-2xl border border-slate-200 shadow-inner min-h-[180px]">
               <div class="text-sm font-bold text-slate-500 mb-4">現在的分數</div>
-              <div id="current-reduce-frac" class="text-6xl font-black text-sky-700 flex flex-col items-center gap-1">
-                <!-- JavaScript 動態渲染目前分數 -->
-              </div>
+              <div id="current-reduce-frac" class="text-6xl font-black text-sky-700 flex flex-col items-center gap-1"></div>
             </div>
             
             <div class="space-y-1">
@@ -173,9 +200,7 @@
                 <span>圖示概念：總量與比例不變，但切割變少了！</span>
                 <span id="reduce-bar-label" class="text-sky-700 font-black"></span>
               </div>
-              <div id="reduce-visual-bar" class="w-full h-10 flex rounded-lg overflow-hidden border-2 border-slate-300 shadow-sm transition-all duration-500 bg-slate-200">
-                <!-- JavaScript 動態渲染分數條 -->
-              </div>
+              <div id="reduce-visual-bar" class="w-full h-10 flex rounded-lg overflow-hidden border-2 border-slate-300 shadow-sm transition-all duration-500 bg-slate-200"></div>
             </div>
           </div>
 
@@ -183,16 +208,12 @@
           <div class="flex flex-col space-y-6 bg-sky-50/50 p-5 rounded-2xl border border-sky-100 h-full">
             <div>
               <div class="text-sm font-bold text-slate-700 mb-3"><i class="fa-solid fa-wand-magic-sparkles text-sky-500"></i> 請選擇要「同時除以」哪個公因數：</div>
-              <div id="factor-buttons" class="flex flex-wrap gap-3 min-h-[50px]">
-                <!-- JavaScript 動態生成除法按鈕 -->
-              </div>
+              <div id="factor-buttons" class="flex flex-wrap gap-3 min-h-[50px]"></div>
             </div>
 
             <div class="flex-grow">
               <div class="text-sm font-bold text-sky-800 mb-3"><i class="fa-solid fa-clock-rotate-left"></i> 約分過程紀錄：</div>
-              <div id="reduce-history" class="flex flex-wrap items-center gap-2 text-lg font-bold text-slate-700 bg-white p-4 rounded-xl border border-slate-200 min-h-[90px]">
-                <!-- JavaScript 動態生成過程軌跡 -->
-              </div>
+              <div id="reduce-history" class="flex flex-wrap items-center gap-2 text-lg font-bold text-slate-700 bg-white p-4 rounded-xl border border-slate-200 min-h-[90px]"></div>
             </div>
           </div>
         </div>
@@ -238,7 +259,6 @@
             <div class="hidden sm:flex bg-slate-800 rounded-lg p-1 border border-slate-700 ml-2">
               <span id="diff-badge" class="px-3 py-1 rounded-md text-sm font-bold text-white bg-emerald-600">難度：簡單</span>
             </div>
-            <!-- 全知之眼倒數計時器 -->
             <div id="vision-timer-badge" class="hidden px-3 py-1 rounded-md text-sm font-black text-blue-900 bg-cyan-300 shadow-[0_0_15px_rgba(103,232,249,0.8)] ml-2 transition-all">
               <i class="fa-solid fa-eye"></i> 視野: <span id="vision-time">3.0</span>s
             </div>
@@ -248,20 +268,16 @@
           </div>
         </div>
 
-        <!-- 遊戲主佈局 (迷宮拓寬，佔比大幅增加) -->
+        <!-- 遊戲主佈局 -->
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
           
-          <!-- 左側：遊戲畫面 (Col-Span 3，超寬比例) -->
           <div class="lg:col-span-3 flex justify-center items-center relative">
             <div id="maze-wrapper" class="canvas-container bg-black rounded-xl border-4 border-slate-700 shadow-[0_0_30px_rgba(0,0,0,0.8)] overflow-hidden">
               
-              <!-- 遊戲畫布 (解除正方形限制) -->
               <canvas id="gameCanvas"></canvas>
               
-              <!-- 受傷閃爍紅光 -->
               <div id="damage-flash" class="absolute inset-0 bg-red-600/50 opacity-0 pointer-events-none transition-opacity duration-100 z-10"></div>
 
-              <!-- 提示文字 -->
               <div class="absolute top-3 left-0 w-full text-center pointer-events-none z-10">
                 <span class="bg-black/60 text-slate-300 px-4 py-1.5 rounded-full text-xs md:text-sm shadow-lg backdrop-blur-sm border border-slate-600">
                   <i class="fa-regular fa-hand-pointer"></i> 提示：直接在畫布上拖曳滑動，即可控制方向
@@ -277,6 +293,23 @@
                 </div>
               </div>
 
+              <!-- 新增：終極寶藏地圖 (覆蓋在畫布上) -->
+              <div id="bonus-room-modal" class="hidden absolute inset-0 bg-slate-900/95 flex flex-col items-center justify-center p-6 text-center z-40 backdrop-blur-md">
+                <h3 class="text-2xl md:text-3xl font-black text-amber-400 mb-6 glow-text">進入隱藏寶藏房！</h3>
+                <div class="relative flex flex-col items-center">
+                  <!-- 漂浮幽靈 -->
+                  <div id="ghost-animation" class="hidden absolute top-0 -left-10 text-6xl md:text-8xl z-50 pointer-events-none drop-shadow-[0_0_20px_rgba(255,255,255,0.6)]">👻</div>
+                  
+                  <!-- 大寶箱 -->
+                  <div id="giant-chest" onclick="clickGiantChest()" class="text-8xl md:text-9xl cursor-pointer select-none drop-shadow-[0_0_30px_rgba(245,158,11,0.5)] transition-transform hover:scale-105 active:scale-95 mb-4">
+                    🎁
+                  </div>
+                  <div class="text-slate-300 font-bold text-lg bg-slate-800 px-4 py-2 rounded-full border border-slate-600">
+                    連續點擊開啟：<span id="chest-click-count" class="text-amber-400">0 / 15</span>
+                  </div>
+                </div>
+              </div>
+
               <!-- 遊戲結束/過關畫面 -->
               <div id="game-over-modal" class="hidden absolute inset-0 bg-black/95 flex flex-col items-center justify-center p-6 text-center z-40 backdrop-blur-lg">
                 <div class="text-6xl md:text-7xl mb-6 glow-text" id="game-over-icon">💀</div>
@@ -287,7 +320,6 @@
             </div>
           </div>
 
-          <!-- 右側：日誌與控制 (Col-Span 1) -->
           <div class="lg:col-span-1 flex flex-col gap-4 max-h-[65vh]">
             <div class="bg-slate-800 flex-grow rounded-2xl border-2 border-slate-700 flex flex-col overflow-hidden min-h-[150px]">
               <div class="bg-slate-900 py-3 px-4 text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-700 flex justify-between">
@@ -445,12 +477,10 @@
         btn.onclick = () => startReduceProblem(p.n, p.d, btn.id);
         container.appendChild(btn);
       });
-      // 預設載入 24/36 這一題
       startReduceProblem(reducePresetsList[3].n, reducePresetsList[3].d, 'preset-btn-3');
     }
 
     function startReduceProblem(n, d, activeBtnId) {
-      // 更新按鈕外觀狀態
       document.querySelectorAll('.reduce-preset-btn').forEach(b => {
         b.classList.remove('bg-sky-500', 'text-white');
         b.classList.add('bg-slate-100', 'text-slate-700');
@@ -463,12 +493,10 @@
         }
       }
 
-      // 重設該題的狀態
       reduceState = { startN: n, startD: d, currN: n, currD: d, history: [] };
       renderReduceView();
     }
 
-    // 找出兩個數字的所有公因數 (排除 1)
     function getCommonFactors(n, d) {
       let factors = [];
       for (let i = 2; i <= Math.min(n, d); i++) {
@@ -480,25 +508,21 @@
     function renderReduceView() {
       const { currN, currD, history } = reduceState;
       
-      // 1. 更新巨大分數顯示
       document.getElementById('current-reduce-frac').innerHTML = `
         <span class="numerator border-b-4 border-sky-700 pb-1">${currN}</span>
         <span class="denominator pt-1">${currD}</span>
       `;
 
-      // 2. 渲染視覺化長條圖 (核心概念：長度不變，只是把格線變少)
       const visualBar = document.getElementById('reduce-visual-bar');
       visualBar.innerHTML = '';
       document.getElementById('reduce-bar-label').innerText = `${currN} / ${currD}`;
       for (let i = 0; i < currD; i++) {
         const segment = document.createElement('div');
         segment.style.flex = '1';
-        // 分隔線會隨著份數減少而變少，視覺上呈現「合併化簡」的感覺
         segment.className = `h-full border-r border-slate-900/15 last:border-r-0 ${i < currN ? 'bg-sky-400' : 'bg-transparent'}`;
         visualBar.appendChild(segment);
       }
 
-      // 3. 產生可用的公因數按鈕
       const factors = getCommonFactors(currN, currD);
       const factorContainer = document.getElementById('factor-buttons');
       factorContainer.innerHTML = '';
@@ -515,15 +539,11 @@
         });
       }
 
-      // 4. 渲染歷史過程軌跡
       const histContainer = document.getElementById('reduce-history');
       if (history.length === 0) {
         histContainer.innerHTML = `<span class="text-slate-400 font-normal text-sm">請點選上方按鈕開始約分...</span>`;
       } else {
-        // 開頭的初始分數
         let html = `<div class="math-frac text-slate-400 scale-90 opacity-70"><span class="numerator">${reduceState.startN}</span><span class="denominator">${reduceState.startD}</span></div>`;
-        
-        // 沿途的約分過程
         history.forEach(step => {
           html += `<div class="text-sky-500 text-center px-1"><span class="text-xs block font-black">÷${step.factor}</span><i class="fa-solid fa-arrow-right"></i></div>`;
           html += `<div class="math-frac text-sky-700"><span class="numerator">${step.n}</span><span class="denominator">${step.d}</span></div>`;
@@ -537,7 +557,9 @@
       reduceState.currD /= factor;
       reduceState.history.push({ n: reduceState.currN, d: reduceState.currD, factor: factor });
       renderReduceView();
-    }    // 4-4
+    }    
+    
+    // 4-4
     let isTongfenActive = false;
     function toggleCommonDenominator() {
       isTongfenActive = !isTongfenActive;
@@ -595,7 +617,6 @@
     let player = { x: 1, y: 1, dx: 1, dy: 1, targetX: 1, targetY: 1, speed: 0.25 };
     let keys = { up: false, down: false, left: false, right: false };
     
-    // ★ 隱藏虛擬搖桿狀態 ★
     let joystick = { active: false, startX: 0, startY: 0, currentX: 0, currentY: 0 };
     
     let hp = 3, maxHp = 5;
@@ -605,7 +626,6 @@
     let animationId = null;
     let visionTimer = 0; 
 
-    // ★ 寬螢幕難度設定 (cols 比 rows 多很多) ★
     const difficultyConfig = {
       'easy': { cols: 19, rows: 11, sight: 5.5, name: '簡單', next: 'medium' },
       'medium': { cols: 27, rows: 15, sight: 4.5, name: '普通', next: 'hard' },
@@ -701,6 +721,7 @@
       document.getElementById('diff-badge').innerText = `難度：${config.name}`;
       document.getElementById('question-modal').classList.add('hidden');
       document.getElementById('game-over-modal').classList.add('hidden');
+      document.getElementById('bonus-room-modal').classList.add('hidden');
       document.getElementById('vision-timer-badge').classList.add('hidden');
       document.getElementById('game-log').innerHTML = ''; 
       logMessage(`進入了 ${config.name} 難度的寬廣迷宮！`, 'special');
@@ -892,7 +913,7 @@
 
       if (idx === activeObject.correctIndex) {
         if (activeObject.type === 4) {
-          if (Math.random() < 0.08) { // 機率下調至 8%
+          if (Math.random() < 0.05) { // 機率下調至 5%
             mapData[activeObject.y][activeObject.x] = 6; 
             logMessage("答對了！寶箱底下居然藏著傳送魔法陣 🌀", 'special');
           } else {
@@ -925,22 +946,96 @@
       }
     }
 
+    // ==================== ★ 新增：最終隱藏寶箱機制 ★ ====================
+    let giantChestClicks = 0;
+    
     function levelComplete() {
       const nextDiff = difficultyConfig[currentDifficulty].next;
       if (nextDiff === 'victory') {
-        gameState = "victory";
-        const modal = document.getElementById('game-over-modal');
-        document.getElementById('game-over-icon').innerText = "🏆";
-        document.getElementById('game-over-title').innerText = "完全通關！";
-        document.getElementById('game-over-title').className = "text-3xl md:text-4xl font-black text-amber-400 mb-4 glow-text";
-        document.getElementById('game-over-desc').innerText = "恭喜你解開了所有難度，成為真正的分數大師！";
-        modal.classList.remove('hidden');
-        if (typeof confetti === 'function') confetti({ particleCount: 300, spread: 160, origin: { y: 0.5 } });
+        gameState = "bonus"; // 進入寶箱連擊狀態
+        giantChestClicks = 0;
+        document.getElementById('giant-chest').innerText = "🎁";
+        document.getElementById('chest-click-count').innerText = "0 / 15";
+        document.getElementById('bonus-room-modal').classList.remove('hidden');
+        logMessage("抵達最深處！發現了一個神祕的巨大寶箱...", 'special');
       } else {
         logMessage(`抵達出口！準備進入更深的迷宮...`, 'success');
         setTimeout(() => startGame(nextDiff), 1000);
       }
     }
+
+    function clickGiantChest() {
+      if (giantChestClicks >= 15) return;
+      giantChestClicks++;
+      
+      const chestEl = document.getElementById('giant-chest');
+      chestEl.classList.remove('shake-effect');
+      void chestEl.offsetWidth; // 觸發重繪
+      chestEl.classList.add('shake-effect');
+      
+      document.getElementById('chest-click-count').innerText = `${giantChestClicks} / 15`;
+      
+      if (giantChestClicks === 15) {
+        chestEl.innerText = "✨"; // 寶箱打開狀態
+        openGiantChest();
+      }
+    }
+
+    function openGiantChest() {
+      const r = Math.random();
+      let sum = 0;
+      let result = null;
+      // 獎勵機率表
+      const rewards = [
+        { name: "短文減少50字", p: 0.05, type: "good" },
+        { name: "圈詞少寫一遍", p: 0.05, type: "good" },
+        { name: "生字詞星星x1", p: 0.03, type: "good" },
+        { name: "短文減少100字", p: 0.01, type: "good" },
+        { name: "週記減少50字", p: 0.05, type: "good" },
+        { name: "週記減少100字", p: 0.01, type: "good" },
+        { name: "寶物被小幽靈帶走了", p: 0.80, type: "ghost" }
+      ];
+      
+      for (let w of rewards) {
+        sum += w.p;
+        if (r <= sum) {
+          result = w;
+          break;
+        }
+      }
+      
+      if (result.type === "ghost") {
+        const ghost = document.getElementById('ghost-animation');
+        ghost.classList.remove('hidden');
+        ghost.classList.add('ghost-animate');
+        logMessage(`👻 哎呀！${result.name}`, 'danger');
+        
+        setTimeout(() => {
+          ghost.classList.add('hidden');
+          ghost.classList.remove('ghost-animate');
+          showFinalVictory();
+        }, 3000);
+      } else {
+        const logBox = document.getElementById('game-log');
+        logBox.innerHTML += `<div class="rainbow-text mt-2 mb-2">🎉 史詩獎勵：${result.name} 🎉</div>`;
+        logBox.scrollTop = logBox.scrollHeight;
+        
+        setTimeout(showFinalVictory, 2500);
+      }
+    }
+
+    function showFinalVictory() {
+      document.getElementById('bonus-room-modal').classList.add('hidden');
+      gameState = "victory";
+      const modal = document.getElementById('game-over-modal');
+      document.getElementById('game-over-icon').innerText = "🏆";
+      document.getElementById('game-over-title').innerText = "完全通關！";
+      document.getElementById('game-over-title').className = "text-3xl md:text-4xl font-black text-amber-400 mb-4 glow-text";
+      document.getElementById('game-over-desc').innerText = "恭喜你解開了所有難度與隱藏寶箱！";
+      modal.classList.remove('hidden');
+      if (typeof confetti === 'function') confetti({ particleCount: 300, spread: 160, origin: { y: 0.5 } });
+    }
+    // =========================================================================
 
     function drawGame() {
       ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, canvas.width, canvas.height);

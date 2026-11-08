@@ -73,31 +73,93 @@
             </span>
         );
 
-        const FractionBlocks = ({ integer, numerator, denominator, multiplier, colorClass, highlight = false }) => {
-            const parts = Math.max(1, denominator * multiplier);
-            const activeParts = Math.max(0, numerator * multiplier);
+        // 終極升級版圖解方塊：色彩比例與網格切割分離技術
+        const FractionBlocks = ({ integer, numerator, denominator, multiplier = 1, colorClass, highlight = false, colorSegments = null, colorDenominator = null }) => {
+            const partsPerBlock = Math.max(1, denominator * multiplier);
+            
+            // 計算總共需要渲染幾個方塊
+            const totalBlocks = Math.max(
+                integer + (numerator > 0 ? 1 : 0),
+                (integer === 0 && numerator === 0) ? 1 : 0
+            );
+
+            // 當產生約分時，給予特別的發光外框提示
+            const borderClass = highlight ? 'border-4 border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.4)]' : 'border-2 border-gray-800 shadow-sm';
             const blocks = [];
-            const borderClass = highlight ? 'border-4 border-green-500 shadow-lg' : 'border-2 border-gray-800 shadow-sm';
-            
-            for (let i = 0; i < integer; i++) {
-                blocks.push(
-                    <div key={`int-${i}`} className={`w-16 h-16 sm:w-24 sm:h-24 md:w-28 md:h-28 flex flex-row ${colorClass} rounded-lg overflow-hidden ${borderClass} transition-all`}>
-                        {Array.from({ length: parts }).map((_, idx) => (
-                            <div key={idx} className="flex-1 border-r-2 border-gray-800/80 last:border-r-0"></div>
+
+            for (let b = 0; b < totalBlocks; b++) {
+                let bgLayer;
+                
+                // 如果有提供混色比例 (運算結果專用)
+                if (colorSegments && colorDenominator) {
+                    const start = b * colorDenominator;
+                    const end = start + colorDenominator;
+                    let currentPos = 0;
+                    const blockSegs = [];
+                    
+                    // 找出屬於這個方塊範圍內的色彩片段
+                    for (const seg of colorSegments) {
+                        const segStart = currentPos;
+                        const segEnd = currentPos + seg.count;
+                        currentPos = segEnd;
+                        
+                        const overlapStart = Math.max(start, segStart);
+                        const overlapEnd = Math.min(end, segEnd);
+                        
+                        if (overlapStart < overlapEnd) {
+                            blockSegs.push({
+                                color: seg.color,
+                                flex: overlapEnd - overlapStart
+                            });
+                        }
+                    }
+                    
+                    // 填補空白區域
+                    const totalFlex = blockSegs.reduce((sum, s) => sum + s.flex, 0);
+                    if (totalFlex < colorDenominator) {
+                        blockSegs.push({ color: 'bg-white', flex: colorDenominator - totalFlex });
+                    }
+
+                    bgLayer = (
+                        <div className="absolute inset-0 flex flex-row">
+                            {blockSegs.map((seg, idx) => (
+                                <div key={idx} style={{ flex: seg.flex }} className={`transition-all duration-700 ${seg.color}`}></div>
+                            ))}
+                        </div>
+                    );
+                } 
+                // 正常的單一顏色渲染 (題目專用)
+                else {
+                    const isFullBlock = b < integer;
+                    const activeParts = isFullBlock ? partsPerBlock : numerator * multiplier;
+                    
+                    bgLayer = (
+                        <div className="absolute inset-0 flex flex-row">
+                            <div style={{ flex: activeParts }} className={`transition-all duration-700 ${colorClass}`}></div>
+                            {activeParts < partsPerBlock && (
+                                <div style={{ flex: partsPerBlock - activeParts }} className="bg-white transition-all duration-700"></div>
+                            )}
+                        </div>
+                    );
+                }
+
+                // 獨立的網格線層 (負責畫分割線)
+                const gridLayer = (
+                    <div className="absolute inset-0 flex flex-row pointer-events-none">
+                        {Array.from({ length: partsPerBlock }).map((_, idx) => (
+                            <div key={idx} className="flex-1 border-r-2 border-gray-800/80 last:border-r-0 transition-all duration-500"></div>
                         ))}
                     </div>
                 );
-            }
-            
-            if (numerator > 0 || (integer === 0 && numerator === 0)) {
+
                 blocks.push(
-                    <div key="frac" className={`w-16 h-16 sm:w-24 sm:h-24 md:w-28 md:h-28 flex flex-row bg-white rounded-lg overflow-hidden relative ${borderClass} transition-all`}>
-                        {Array.from({ length: parts }).map((_, idx) => (
-                            <div key={idx} className={`flex-1 border-r-2 border-gray-800/80 last:border-r-0 transition-colors duration-300 ${idx < activeParts ? colorClass : 'bg-white'}`}></div>
-                        ))}
+                    <div key={b} className={`w-16 h-16 sm:w-24 sm:h-24 md:w-28 md:h-28 relative rounded-lg overflow-hidden ${borderClass} transition-all duration-500`}>
+                        {bgLayer}
+                        {gridLayer}
                     </div>
                 );
             }
+
             return <div className="flex gap-1 sm:gap-2">{blocks}</div>;
         };
 
@@ -193,7 +255,14 @@
                 const top2 = f2.i * commonD + f2.n * (commonD / f2.d);
                 let rawTop = op === '+' ? top1 + top2 : top1 - top2;
                 
-                if (rawTop <= 0) return { unreduced: { i:0, n:0, d:1 }, final: { i:0, n:0, d:1 }, needsReduction: false, divisor: 1 };
+                if (rawTop <= 0) return { 
+                    unreduced: { i:0, n:0, d:1 }, 
+                    final: { i:0, n:0, d:1 }, 
+                    needsReduction: false, 
+                    divisor: 1,
+                    colorSegments: [{ count: 0, color: 'bg-pink-400' }],
+                    colorDenominator: 1
+                };
                 
                 const ui = Math.floor(rawTop / commonD);
                 const un = rawTop % commonD;
@@ -201,11 +270,18 @@
                 
                 const g = un > 0 ? gcd(un, ud) : 1;
                 
+                // 加法：粉紅色 + 藍色 ； 減法：只剩下粉紅色
+                const colorSegments = op === '+'
+                    ? [ { count: top1, color: 'bg-pink-400' }, { count: top2, color: 'bg-blue-400' } ]
+                    : [ { count: rawTop, color: 'bg-pink-400' } ];
+
                 return {
                     unreduced: { i: ui, n: un, d: ud },
                     final: { i: ui, n: un/g, d: ud/g },
                     needsReduction: g > 1,
-                    divisor: g
+                    divisor: g,
+                    colorSegments,
+                    colorDenominator: commonD
                 };
             };
 
@@ -361,17 +437,19 @@
                                     </div>
                                 </div>
 
-                                {/* 同一行的等號與運算結果 (使用 key 觸發動畫原地變換) */}
+                                {/* 同一行的等號與運算結果 */}
                                 {step >= 4 && (
                                     <>
                                         <div className="text-4xl sm:text-5xl font-black text-gray-400 drop-shadow-sm fade-in">=</div>
-                                        <div className="flex flex-col items-center gap-4 fade-in" key={`result-step-${step}`}>
+                                        <div className="flex flex-col items-center gap-4 fade-in">
+                                            {/* 原地變換網格，顏色比例永遠保持 colorSegments！ */}
                                             {step === 4 ? (
-                                                <FractionBlocks integer={res.unreduced.i} numerator={res.unreduced.n} denominator={res.unreduced.d} multiplier={1} colorClass={op === '+' ? 'bg-purple-400' : 'bg-teal-400'} />
+                                                <FractionBlocks integer={res.unreduced.i} numerator={res.unreduced.n} denominator={res.unreduced.d} multiplier={1} colorSegments={res.colorSegments} colorDenominator={res.colorDenominator} />
                                             ) : (
-                                                <FractionBlocks integer={res.final.i} numerator={res.final.n} denominator={res.final.d} multiplier={1} colorClass="bg-green-500" highlight={res.needsReduction} />
+                                                <FractionBlocks integer={res.final.i} numerator={res.final.n} denominator={res.final.d} multiplier={1} colorSegments={res.colorSegments} colorDenominator={res.colorDenominator} highlight={res.needsReduction} />
                                             )}
-                                            <div className="bg-white px-4 py-1.5 rounded-full shadow border border-gray-300 font-bold text-gray-600">
+                                            
+                                            <div className="bg-white px-4 py-1.5 rounded-full shadow border border-gray-300 font-bold text-gray-600 transition-all">
                                                 {step === 4 ? "運算結果" : (res.needsReduction ? "最簡分數" : "運算結果")}
                                             </div>
                                         </div>
@@ -383,7 +461,6 @@
                         {/* 算式總結區與右下角操作按鈕 */}
                         <div className="relative flex flex-col md:flex-row justify-center items-center gap-4 bg-white p-6 md:p-8 rounded-3xl border-2 border-gray-200 shadow-sm min-h-[110px]">
                             
-                            {/* 算式本體 */}
                             <div className="flex flex-wrap justify-center items-center gap-3 md:gap-5 text-2xl md:text-4xl font-black text-gray-700">
                                 <div className="flex items-center">
                                     {f1.i > 0 && <span className="mr-1">{f1.i}</span>}
@@ -402,16 +479,16 @@
                                 
                                 {step >= 4 ? (
                                     <>
-                                        <div className="flex items-center text-purple-600 fade-in transition-all">
+                                        <div className="flex items-center text-gray-700 fade-in transition-all">
                                             {res.unreduced.i > 0 && <span className="mr-1">{res.unreduced.i}</span>}
                                             {res.unreduced.n > 0 ? (
                                                 <div className="flex items-center">
                                                     {/* 未約分分數 (帶有紅筆劃掉特效) */}
-                                                    <div className={`flex flex-col items-center text-xl md:text-3xl leading-none ${step === 5 && res.needsReduction ? 'text-gray-400' : ''}`}>
+                                                    <div className={`flex flex-col items-center text-xl md:text-3xl leading-none transition-colors ${step === 5 && res.needsReduction ? 'text-gray-400' : ''}`}>
                                                         <span className={step === 5 && res.needsReduction ? 'strike-through' : ''}>
                                                             {res.unreduced.n}
                                                         </span>
-                                                        <div className={`w-full border-t-[3px] my-1 ${step === 5 && res.needsReduction ? 'border-gray-400' : 'border-purple-600'}`}></div>
+                                                        <div className={`w-full border-t-[3px] my-1 transition-colors ${step === 5 && res.needsReduction ? 'border-gray-400' : 'border-gray-700'}`}></div>
                                                         <span className={step === 5 && res.needsReduction ? 'strike-through' : ''}>
                                                             {res.unreduced.d}
                                                         </span>
@@ -446,7 +523,7 @@
                                 )}
                                 {step === 4 && !isPlaying && (
                                     <button onClick={checkReduction} className="px-6 py-2.5 md:py-3 bg-indigo-500 text-white rounded-xl font-bold shadow-md hover:bg-indigo-600 transition-all text-base hover:scale-105 active:scale-95 border-b-4 border-indigo-700 fade-in whitespace-nowrap tracking-wide">
-                                        🔍 檢查是否需約分
+                                        🔍 檢查約分
                                     </button>
                                 )}
                             </div>

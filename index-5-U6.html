@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>魔法分數樂園 - 異分母互動教學</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 React 核心 -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- 引入 Babel 以解析 JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { background-color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; overflow-x: hidden;}
+        
+        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        
+        .float-anim { animation: float 6s ease-in-out infinite; }
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(5deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+
+        /* 紅筆劃掉的約分特效 */
+        .strike-through {
+            position: relative;
+            display: inline-block;
+        }
+        .strike-through::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -15%;
+            width: 130%;
+            height: 4px;
+            background-color: #ef4444; /* Tailwind red-500 */
+            border-radius: 2px;
+            transform-origin: left center;
+            animation: strikeDraw 0.4s ease-out forwards;
+        }
+        @keyframes strikeDraw {
+            0% { transform: translateY(-50%) rotate(-20deg) scaleX(0); }
+            100% { transform: translateY(-50%) rotate(-20deg) scaleX(1); }
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="min-h-screen flex justify-center text-gray-800 relative">
+    <div id="root" class="w-full max-w-[95%] xl:max-w-[1200px] z-10 p-2 md:p-6 flex flex-col items-center"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
+        const lcm = (a, b) => (a * b) / gcd(a, b);
+
+        const InlineFraction = ({ i, n, d }) => (
+            <span className="inline-flex items-center align-middle mx-1 font-bold text-lg text-blue-800">
+                {i > 0 && <span className="mr-0.5">{i}</span>}
+                <span className="flex flex-col items-center text-[0.85em] leading-none">
+                    <span>{n}</span>
+                    <span className="w-full border-t-[2px] border-blue-800 my-[2px]"></span>
+                    <span>{d}</span>
+                </span>
+            </span>
+        );
+
+        const FractionBlocks = ({ integer, numerator, denominator, multiplier, colorClass, highlight = false }) => {
+            const parts = Math.max(1, denominator * multiplier);
+            const activeParts = Math.max(0, numerator * multiplier);
+            const blocks = [];
+            const borderClass = highlight ? 'border-4 border-green-500 shadow-lg' : 'border-2 border-gray-800 shadow-sm';
+            
+            for (let i = 0; i < integer; i++) {
+                blocks.push(
+                    <div key={`int-${i}`} className={`w-16 h-16 sm:w-24 sm:h-24 md:w-28 md:h-28 flex flex-row ${colorClass} rounded-lg overflow-hidden ${borderClass} transition-all`}>
+                        {Array.from({ length: parts }).map((_, idx) => (
+                            <div key={idx} className="flex-1 border-r-2 border-gray-800/80 last:border-r-0"></div>
+                        ))}
+                    </div>
+                );
+            }
+            
+            if (numerator > 0 || (integer === 0 && numerator === 0)) {
+                blocks.push(
+                    <div key="frac" className={`w-16 h-16 sm:w-24 sm:h-24 md:w-28 md:h-28 flex flex-row bg-white rounded-lg overflow-hidden relative ${borderClass} transition-all`}>
+                        {Array.from({ length: parts }).map((_, idx) => (
+                            <div key={idx} className={`flex-1 border-r-2 border-gray-800/80 last:border-r-0 transition-colors duration-300 ${idx < activeParts ? colorClass : 'bg-white'}`}></div>
+                        ))}
+                    </div>
+                );
+            }
+            return <div className="flex gap-1 sm:gap-2">{blocks}</div>;
+        };
+
+        const App = () => {
+            const [tab, setTab] = useState('6-1');
+            const [f1, setF1] = useState({ i: 0, n: 1, d: 2 });
+            const [f2, setF2] = useState({ i: 0, n: 1, d: 3 });
+            const [op, setOp] = useState('+');
+            const [m1, setM1] = useState(1);
+            const [m2, setM2] = useState(1);
+            
+            const [theme, setTheme] = useState(null);
+            const [step, setStep] = useState(0);
+            const [isPlaying, setIsPlaying] = useState(false);
+            const [stepMessage, setStepMessage] = useState('💡 觀察分母，請手動調整倍數進行通分。');
+            const timerRef = useRef(null);
+
+            const getLCM = () => lcm(f1.d, f2.d);
+            
+            const generateProblem = (currentTab = tab) => {
+                let d1 = Math.floor(Math.random() * 4) + 2; 
+                let d2 = Math.floor(Math.random() * 4) + 2;
+                while (d1 === d2 || lcm(d1, d2) > 24) { d2 = Math.floor(Math.random() * 4) + 2; }
+                
+                let n1 = Math.floor(Math.random() * (d1 - 1)) + 1;
+                let n2 = Math.floor(Math.random() * (d2 - 1)) + 1;
+                
+                let i1 = Math.random() > 0.4 ? Math.floor(Math.random() * 2) + 1 : 0;
+                let i2 = Math.random() > 0.4 ? Math.floor(Math.random() * 2) + 1 : 0;
+
+                let newOp = currentTab === '6-1' ? '+' : '-';
+                if (currentTab === '6-3') newOp = Math.random() > 0.5 ? '+' : '-';
+
+                if (newOp === '-') {
+                    const val1 = i1 + n1 / d1;
+                    const val2 = i2 + n2 / d2;
+                    if (val2 > val1) {
+                        const temp_i = i1, temp_n = n1, temp_d = d1;
+                        i1 = i2; n1 = n2; d1 = d2;
+                        i2 = temp_i; n2 = temp_n; d2 = temp_d;
+                    } else if (val1 === val2) {
+                        i1 += 1; 
+                    }
+                }
+
+                setF1({ i: i1, n: n1, d: d1 });
+                setF2({ i: i2, n: n2, d: d2 });
+                setOp(newOp);
+                setM1(1);
+                setM2(1);
+                setStep(0);
+                setStepMessage('💡 觀察分母，請點擊「+ / -」手動通分。');
+                setIsPlaying(false);
+                clearTimeout(timerRef.current);
+
+                if (currentTab === '6-3') {
+                    const themes = [
+                        { id: 'tape', op: '+', emojis: ['🎁', '🎀', '✂️', '♻️', '📦'] },
+                        { id: 'paint', op: '-', emojis: ['🎨', '🖌️', '🏠', '🪜', '🌈'] },
+                        { id: 'milk', op: '-', emojis: ['🥛', '🐄', '🧊', '🥣', '🍓'] }
+                    ];
+                    const validThemes = themes.filter(t => t.op === newOp);
+                    setTheme(validThemes[Math.floor(Math.random() * validThemes.length)]);
+                } else {
+                    setTheme({ id: 'math', emojis: ['➕', '➖', '✨', '🔢', '💡'] });
+                }
+            };
+
+            useEffect(() => { generateProblem(); }, [tab]);
+
+            const bgPattern = useMemo(() => {
+                if (!theme) return [];
+                const items = [];
+                for (let i = 0; i < 24; i++) {
+                    items.push({
+                        id: i,
+                        emoji: theme.emojis[i % theme.emojis.length],
+                        left: Math.random() * 90 + 5 + '%',
+                        top: Math.random() * 90 + 5 + '%',
+                        delay: Math.random() * 5 + 's',
+                        size: Math.random() * 2 + 2.5 + 'rem'
+                    });
+                }
+                return items;
+            }, [theme]);
+
+            const getCalculatedResult = () => {
+                const currentD1 = f1.d * m1;
+                const currentD2 = f2.d * m2;
+                const commonD = (currentD1 === currentD2) ? currentD1 : getLCM();
+                
+                const top1 = f1.i * commonD + f1.n * (commonD / f1.d);
+                const top2 = f2.i * commonD + f2.n * (commonD / f2.d);
+                let rawTop = op === '+' ? top1 + top2 : top1 - top2;
+                
+                if (rawTop <= 0) return { unreduced: { i:0, n:0, d:1 }, final: { i:0, n:0, d:1 }, needsReduction: false, divisor: 1 };
+                
+                const ui = Math.floor(rawTop / commonD);
+                const un = rawTop % commonD;
+                const ud = commonD;
+                
+                const g = un > 0 ? gcd(un, ud) : 1;
+                
+                return {
+                    unreduced: { i: ui, n: un, d: ud },
+                    final: { i: ui, n: un/g, d: ud/g },
+                    needsReduction: g > 1,
+                    divisor: g
+                };
+            };
+
+            const checkAnswer = () => {
+                const currentD1 = f1.d * m1;
+                const currentD2 = f2.d * m2;
+
+                if (currentD1 === currentD2) {
+                    setStepMessage('🎉 通分成功！單位相同了，請看運算結果。');
+                    setStep(4); 
+                } else {
+                    setStepMessage('❌ 分母還不一樣喔，請繼續調整倍數！');
+                }
+            };
+
+            const checkReduction = () => {
+                const res = getCalculatedResult();
+                if (res.needsReduction) {
+                    setStepMessage(`💡 發現還可以約分！分子和分母同除以「${res.divisor}」。`);
+                    setStep(5);
+                } else {
+                    setStepMessage('✨ 已經是最簡分數囉！計算完成！');
+                    setStep(5);
+                }
+            };
+
+            const targetM1 = getLCM() / f1.d;
+            const targetM2 = getLCM() / f2.d;
+
+            const startAutoPlay = () => {
+                if (isPlaying) return;
+                setIsPlaying(true);
+                setStep(0);
+                setM1(1);
+                setM2(1);
+                
+                const stepsSeq = [
+                    { msg: `💡 尋找分母 ${f1.d} 和 ${f2.d} 的最小公倍數：${getLCM()}`, action: () => {} },
+                    { msg: `💡 將第一個分數擴分，上下同乘 ${targetM1}`, action: () => setM1(targetM1) },
+                    { msg: `💡 將第二個分數擴分，上下同乘 ${targetM2}`, action: () => setM2(targetM2) },
+                    { msg: `💡 單位相同了！進行分子計算`, action: () => setStep(4) }
+                ];
+
+                let currentStep = 0;
+                setStepMessage(stepsSeq[0].msg);
+                stepsSeq[0].action();
+
+                const playNext = () => {
+                    currentStep++;
+                    if (currentStep < stepsSeq.length) {
+                        setStepMessage(stepsSeq[currentStep].msg);
+                        stepsSeq[currentStep].action();
+                        timerRef.current = setTimeout(playNext, 2500);
+                    } else {
+                        const autoRes = getCalculatedResult();
+                        if (autoRes.needsReduction) {
+                            setStepMessage(`💡 還可以約分！分子和分母同除以 ${autoRes.divisor}。`);
+                            setStep(5);
+                        } else {
+                            setStepMessage(`✨ 計算完成，已經是最簡分數！`);
+                            setStep(5);
+                        }
+                        setIsPlaying(false);
+                    }
+                };
+                timerRef.current = setTimeout(playNext, 2500);
+            };
+
+            const res = getCalculatedResult();
+
+            return (
+                <div className="w-full relative">
+                    
+                    <div className="fixed inset-0 pointer-events-none z-[-1] opacity-20 overflow-hidden">
+                        {bgPattern.map((item) => (
+                            <div key={item.id} className="absolute float-anim grayscale-[30%]" 
+                                style={{ left: item.left, top: item.top, animationDelay: item.delay, fontSize: item.size }}>
+                                {item.emoji}
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="bg-white/95 backdrop-blur-md rounded-3xl border border-gray-200 shadow-2xl flex flex-col p-4 md:p-8 w-full z-10">
+                        
+                        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                            <h1 className="text-2xl md:text-3xl font-black text-gray-700 flex items-center gap-2 tracking-wide">
+                                ✨ 魔法分數樂園
+                            </h1>
+                            <div className="flex bg-gray-100 p-1.5 rounded-full shadow-inner overflow-x-auto max-w-full">
+                                {['6-1', '6-2', '6-3'].map((t) => (
+                                    <button key={t} onClick={() => setTab(t)} 
+                                        className={`px-5 py-2.5 rounded-full text-sm md:text-base font-bold transition-all whitespace-nowrap ${tab === t ? 'bg-white text-blue-600 shadow-md scale-105' : 'text-gray-500 hover:bg-gray-200'}`}>
+                                        {t === '6-1' ? '6-1 異分母加法' : t === '6-2' ? '6-2 異分母減法' : '6-3 分數的應用'}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col md:flex-row justify-between items-center bg-blue-50/80 p-4 border border-blue-100 rounded-2xl mb-6 gap-4 min-h-[80px]">
+                            <button onClick={() => generateProblem()} className="px-6 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-700 font-bold hover:bg-gray-50 shadow-sm transition-all whitespace-nowrap">
+                                ↺ 換一題
+                            </button>
+                            
+                            <div className="flex-1 flex justify-center w-full relative">
+                                {stepMessage && (
+                                    <div key={stepMessage} className="fade-in bg-yellow-300 text-yellow-900 px-6 py-2.5 rounded-2xl shadow-md font-bold text-lg border-2 border-yellow-500 text-center z-10">
+                                        {stepMessage}
+                                    </div>
+                                )}
+                            </div>
+
+                            <button onClick={startAutoPlay} disabled={isPlaying || step >= 4} className="px-6 py-3 bg-pink-500 text-white rounded-xl font-bold shadow-md hover:bg-pink-600 disabled:opacity-50 transition-all whitespace-nowrap">
+                                ▶ 自動動畫
+                            </button>
+                        </div>
+
+                        {tab === '6-3' && theme && (
+                            <div className="mb-6 bg-green-50/90 border-l-8 border-green-500 p-5 rounded-r-2xl text-green-950 font-medium text-xl shadow-sm leading-relaxed tracking-wide">
+                                {theme.id === 'tape' && (
+                                    <span>為了減少塑膠垃圾，妮妮在包裝禮物時，分別用了 <InlineFraction i={f1.i} n={f1.n} d={f1.d} /> 公尺和 <InlineFraction i={f2.i} n={f2.n} d={f2.d} /> 公尺的環保膠帶，共用掉幾公尺？</span>
+                                )}
+                                {theme.id === 'paint' && (
+                                    <span>爸爸準備了 <InlineFraction i={f1.i} n={f1.n} d={f1.d} /> 桶油漆粉刷牆面，粉刷完成後剩下 <InlineFraction i={f2.i} n={f2.n} d={f2.d} /> 桶，請問粉刷牆面用掉了幾桶油漆？</span>
+                                )}
+                                {theme.id === 'milk' && (
+                                    <span>冰箱有一瓶 <InlineFraction i={f1.i} n={f1.n} d={f1.d} /> 公升的鮮奶，子晴喝了 <InlineFraction i={f2.i} n={f2.n} d={f2.d} /> 公升，請問還剩下幾公升的鮮奶？</span>
+                                )}
+                            </div>
+                        )}
+
+                        {/* 圖解互動區 */}
+                        <div className="flex flex-col items-center justify-center p-6 md:p-8 bg-gray-50/80 border border-gray-200 rounded-3xl mb-6 relative">
+                            
+                            <div className="flex flex-wrap justify-center items-center gap-4 md:gap-6 lg:gap-10 w-full">
+                                
+                                <div className="flex flex-col items-center gap-4 fade-in">
+                                    <FractionBlocks integer={f1.i} numerator={f1.n} denominator={f1.d} multiplier={m1} colorClass="bg-pink-400" />
+                                    <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full shadow border border-gray-300">
+                                        <button disabled={m1 <= 1 || isPlaying || step >= 4} onClick={()=>setM1(m1-1)} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-300 font-bold disabled:opacity-30 text-lg">-</button>
+                                        <span className="w-10 text-center font-bold text-gray-600 text-lg">x{m1}</span>
+                                        <button disabled={m1 >= 10 || isPlaying || step >= 4} onClick={()=>setM1(m1+1)} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-300 font-bold disabled:opacity-30 text-lg">+</button>
+                                    </div>
+                                </div>
+                                
+                                <div className="text-4xl sm:text-5xl font-black text-gray-400 drop-shadow-sm fade-in">{op}</div>
+                                
+                                <div className="flex flex-col items-center gap-4 fade-in">
+                                    <FractionBlocks integer={f2.i} numerator={f2.n} denominator={f2.d} multiplier={m2} colorClass="bg-blue-400" />
+                                    <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full shadow border border-gray-300">
+                                        <button disabled={m2 <= 1 || isPlaying || step >= 4} onClick={()=>setM2(m2-1)} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-300 font-bold disabled:opacity-30 text-lg">-</button>
+                                        <span className="w-10 text-center font-bold text-gray-600 text-lg">x{m2}</span>
+                                        <button disabled={m2 >= 10 || isPlaying || step >= 4} onClick={()=>setM2(m2+1)} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-300 font-bold disabled:opacity-30 text-lg">+</button>
+                                    </div>
+                                </div>
+
+                                {/* 同一行的等號與運算結果 (使用 key 觸發動畫原地變換) */}
+                                {step >= 4 && (
+                                    <>
+                                        <div className="text-4xl sm:text-5xl font-black text-gray-400 drop-shadow-sm fade-in">=</div>
+                                        <div className="flex flex-col items-center gap-4 fade-in" key={`result-step-${step}`}>
+                                            {step === 4 ? (
+                                                <FractionBlocks integer={res.unreduced.i} numerator={res.unreduced.n} denominator={res.unreduced.d} multiplier={1} colorClass={op === '+' ? 'bg-purple-400' : 'bg-teal-400'} />
+                                            ) : (
+                                                <FractionBlocks integer={res.final.i} numerator={res.final.n} denominator={res.final.d} multiplier={1} colorClass="bg-green-500" highlight={res.needsReduction} />
+                                            )}
+                                            <div className="bg-white px-4 py-1.5 rounded-full shadow border border-gray-300 font-bold text-gray-600">
+                                                {step === 4 ? "運算結果" : (res.needsReduction ? "最簡分數" : "運算結果")}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* 算式總結區與右下角操作按鈕 */}
+                        <div className="relative flex flex-col md:flex-row justify-center items-center gap-4 bg-white p-6 md:p-8 rounded-3xl border-2 border-gray-200 shadow-sm min-h-[110px]">
+                            
+                            {/* 算式本體 */}
+                            <div className="flex flex-wrap justify-center items-center gap-3 md:gap-5 text-2xl md:text-4xl font-black text-gray-700">
+                                <div className="flex items-center">
+                                    {f1.i > 0 && <span className="mr-1">{f1.i}</span>}
+                                    <div className="flex flex-col items-center text-xl md:text-3xl leading-none">
+                                        <span>{f1.n * m1}</span><div className="w-full border-t-[3px] border-gray-700 my-1"></div><span>{f1.d * m1}</span>
+                                    </div>
+                                </div>
+                                <span className="text-gray-400 mx-2">{op}</span>
+                                <div className="flex items-center">
+                                    {f2.i > 0 && <span className="mr-1">{f2.i}</span>}
+                                    <div className="flex flex-col items-center text-xl md:text-3xl leading-none">
+                                        <span>{f2.n * m2}</span><div className="w-full border-t-[3px] border-gray-700 my-1"></div><span>{f2.d * m2}</span>
+                                    </div>
+                                </div>
+                                <span className="text-gray-400 mx-2">=</span>
+                                
+                                {step >= 4 ? (
+                                    <>
+                                        <div className="flex items-center text-purple-600 fade-in transition-all">
+                                            {res.unreduced.i > 0 && <span className="mr-1">{res.unreduced.i}</span>}
+                                            {res.unreduced.n > 0 ? (
+                                                <div className="flex items-center">
+                                                    {/* 未約分分數 (帶有紅筆劃掉特效) */}
+                                                    <div className={`flex flex-col items-center text-xl md:text-3xl leading-none ${step === 5 && res.needsReduction ? 'text-gray-400' : ''}`}>
+                                                        <span className={step === 5 && res.needsReduction ? 'strike-through' : ''}>
+                                                            {res.unreduced.n}
+                                                        </span>
+                                                        <div className={`w-full border-t-[3px] my-1 ${step === 5 && res.needsReduction ? 'border-gray-400' : 'border-purple-600'}`}></div>
+                                                        <span className={step === 5 && res.needsReduction ? 'strike-through' : ''}>
+                                                            {res.unreduced.d}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* 若有約分，旁邊浮現出紅色的最簡分數 */}
+                                                    {step === 5 && res.needsReduction && (
+                                                        <>
+                                                            <span className="text-gray-400 mx-3 fade-in">=</span>
+                                                            <div className="flex flex-col items-center text-xl md:text-3xl leading-none text-red-600 fade-in">
+                                                                <span>{res.final.n}</span>
+                                                                <div className="w-full border-t-[3px] border-red-600 my-1"></div>
+                                                                <span>{res.final.d}</span>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            ) : (res.unreduced.i === 0 && <span>0</span>)}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <span className="text-gray-300">?</span>
+                                )}
+                            </div>
+
+                            {/* 按鈕群組(固定於右側) */}
+                            <div className="md:absolute md:right-8 flex items-center mt-4 md:mt-0">
+                                {step < 4 && !isPlaying && (
+                                    <button onClick={checkAnswer} className="px-6 py-2.5 md:py-3 bg-green-500 text-white rounded-xl font-bold shadow-md hover:bg-green-600 transition-all text-base hover:scale-105 active:scale-95 border-b-4 border-green-700 fade-in whitespace-nowrap tracking-wide">
+                                        ✅ 確認通分
+                                    </button>
+                                )}
+                                {step === 4 && !isPlaying && (
+                                    <button onClick={checkReduction} className="px-6 py-2.5 md:py-3 bg-indigo-500 text-white rounded-xl font-bold shadow-md hover:bg-indigo-600 transition-all text-base hover:scale-105 active:scale-95 border-b-4 border-indigo-700 fade-in whitespace-nowrap tracking-wide">
+                                        🔍 檢查是否需約分
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>線對稱互動學習網頁 - 十關完整版</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { 
+            margin: 0; padding: 0; 
+            background-color: #e0f2fe; 
+            min-height: 100vh; 
+            font-family: 'Nunito', 'Microsoft JhengHei', sans-serif; 
+            color: #334155;
+            overflow-x: hidden;
+            touch-action: none;
+        }
+
+        .bg-illustrations {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none;
+            z-index: -1;
+            overflow: hidden;
+        }
+        .bg-icon {
+            position: absolute;
+            color: rgba(255, 255, 255, 0.7);
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(5deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+        
+        .btn-cute {
+            transition: all 0.15s ease;
+            position: relative; top: 0;
+        }
+        .btn-cute:active:not(:disabled) {
+            top: 2px; box-shadow: 0 0px 0 transparent !important;
+        }
+        .nav-btn {
+            background-color: #ffffff; color: #64748b; border: 2px solid #cbd5e1; box-shadow: 0 2px 0 #94a3b8;
+        }
+        .nav-btn.active {
+            background-color: #38bdf8; color: white; border-color: #0284c7; box-shadow: 0 2px 0 #0369a1;
+        }
+        
+        @keyframes popIn { 0% { transform: scale(0.98); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .animate-pop { animation: popIn 0.25s ease-out forwards; }
+        
+        .canvas-container {
+            background-image: 
+                linear-gradient(45deg, #f1f5f9 25%, transparent 25%), 
+                linear-gradient(-45deg, #f1f5f9 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #f1f5f9 75%), 
+                linear-gradient(-45deg, transparent 75%, #f1f5f9 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            background-color: #ffffff;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-illustrations">
+        <i class="fa-solid fa-cloud bg-icon" style="top: 10%; left: 5%; font-size: 5rem; animation-delay: 0s;"></i>
+        <i class="fa-solid fa-star bg-icon text-yellow-200" style="top: 20%; right: 10%; font-size: 3rem; animation-delay: 1s;"></i>
+        <i class="fa-solid fa-rocket bg-icon" style="bottom: 15%; left: 15%; font-size: 4rem; animation-delay: 2s; opacity: 0.5;"></i>
+        <i class="fa-solid fa-moon bg-icon text-yellow-100" style="top: 50%; right: 5%; font-size: 6rem; animation-delay: 1.5s;"></i>
+        <i class="fa-solid fa-paper-plane bg-icon" style="bottom: 30%; right: 20%; font-size: 3rem; animation-delay: 0.5s;"></i>
+        <i class="fa-solid fa-heart bg-icon text-pink-200" style="top: 40%; left: 8%; font-size: 2.5rem; animation-delay: 2.5s;"></i>
+    </div>
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback } = React;
+
+        // --- 共用 UI 元件 ---
+        const CuteButton = ({ onClick, children, color = 'blue', disabled = false, className = '', title = '' }) => {
+            const colors = {
+                pink: 'bg-pink-400 hover:bg-pink-500 border-pink-500 shadow-[0_2px_0_#db2777]',
+                blue: 'bg-sky-400 hover:bg-sky-500 border-sky-500 shadow-[0_2px_0_#0284c7]',
+                yellow: 'bg-amber-400 hover:bg-amber-500 border-amber-500 shadow-[0_2px_0_#d97706]',
+                gray: 'bg-slate-200 hover:bg-slate-300 border-slate-300 text-slate-600 shadow-[0_2px_0_#94a3b8]',
+                green: 'bg-emerald-400 hover:bg-emerald-500 border-emerald-500 shadow-[0_2px_0_#059669]',
+                purple: 'bg-indigo-400 hover:bg-indigo-500 border-indigo-500 shadow-[0_2px_0_#4338ca]'
+            };
+            const textColor = color === 'gray' ? 'text-slate-600' : 'text-white';
+            return (
+                <button onClick={onClick} disabled={disabled} title={title}
+                    className={`btn-cute font-bold ${textColor} px-3 py-1.5 md:px-4 md:py-1.5 rounded-lg border-2 text-sm md:text-base whitespace-nowrap ${colors[color]} ${disabled ? 'opacity-40 cursor-not-allowed transform-none shadow-none top-[2px]' : ''} ${className}`}
+                >
+                    {children}
+                </button>
+            );
+        };
+
+        const ShareComponent = ({ title }) => {
+            const [name, setName] = useState('');
+            const handleShare = async () => {
+                if (!name.trim()) { alert('請先輸入你的名字喔！✨'); return; }
+                const shareText = `我是 ${name}，我完成了「${title}」的挑戰！🎉`;
+                if (navigator.share) {
+                    try { await navigator.share({ title: '線對稱挑戰完成', text: shareText }); } catch (err) {}
+                } else {
+                    alert(`(模擬 AirDrop) 傳送成功！🚀\n\n訊息: ${shareText}`);
+                }
+            };
+            return (
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center justify-center gap-2 bg-white/95 p-2 md:p-3 rounded-2xl border-2 border-sky-300 shadow-xl z-50">
+                    <input type="text" placeholder="輸入名字..." value={name} onChange={e => setName(e.target.value)}
+                        className="px-3 py-1.5 border-2 border-sky-200 rounded-xl text-center focus:outline-none focus:border-sky-400 font-bold text-sky-700 w-32 md:w-40"
+                    />
+                    <CuteButton color="blue" onClick={handleShare}>傳送作品</CuteButton>
+                </div>
+            );
+        };
+
+        // --- 1. 剪紙模擬器 ---
+        const PaperCutMode = () => {
+            const [folds, setFolds] = useState([]); 
+            const [isUnfolded, setIsUnfolded] = useState(false);
+            const [paths, setPaths] = useState([]); 
+            const [currentPath, setCurrentPath] = useState([]);
+            const canvasRef = useRef(null);
+            const containerRef = useRef(null);
+
+            const [tool, setTool] = useState('draw'); 
+            const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1, angle: 0 });
+            const [isDragging, setIsDragging] = useState(false);
+            const [isDrawing, setIsDrawing] = useState(false);
+
+            const validTransitions = {
+                '': [{id:'v', label:'左右對摺'}, {id:'h', label:'上下對摺'}, {id:'d1', label:'對角 ＼'}, {id:'d2', label:'對角 ／'}],
+                'v': [{id:'h', label:'上下對摺'}],
+                'h': [{id:'v', label:'左右對摺'}],
+                'v,h': [{id:'d1', label:'斜角 ＼'}, {id:'d3', label:'斜角 ／'}],
+                'h,v': [{id:'d1', label:'斜角 ＼'}, {id:'d3', label:'斜角 ／'}],
+                'd1': [{id:'d2', label:'對角 ／'}],
+                'd2': [{id:'d1', label:'對角 ＼'}],
+                'd1,d2': [{id:'v', label:'左右對摺'}],
+                'd2,d1': [{id:'v', label:'左右對摺'}]
+            };
+
+            const currentStateKey = folds.join(',');
+            const availableFolds = validTransitions[currentStateKey] || [];
+
+            const handleFold = (type) => {
+                if (isUnfolded) return;
+                if (paths.length > 0 && !window.confirm("更換摺法會清空目前畫好的形狀喔！確定嗎？")) return;
+                if (paths.length > 0) setPaths([]);
+                setFolds([...folds, type]);
+                setTransform({ x: 0, y: 0, scale: 1, angle: 0 }); 
+            };
+
+            const resetPaper = () => { setFolds([]); setPaths([]); setCurrentPath([]); setIsUnfolded(false); setTransform({ x: 0, y: 0, scale: 1, angle: 0 }); };
+            const undoFold = () => {
+                if (isUnfolded || folds.length === 0) return;
+                if (paths.length > 0 && !window.confirm("退回上一步會清空目前畫好的形狀喔！確定嗎？")) return;
+                setPaths([]);
+                setFolds(folds.slice(0, -1));
+            };
+
+            const getMirroredPaths = useCallback((basePaths) => {
+                let result = [...basePaths];
+                for (let i = folds.length - 1; i >= 0; i--) {
+                    const f = folds[i];
+                    let mirrored = [];
+                    if (f === 'v') mirrored = result.map(path => path.map(p => ({ x: 500 - p.x, y: p.y })));
+                    if (f === 'h') mirrored = result.map(path => path.map(p => ({ x: p.x, y: 500 - p.y })));
+                    if (f === 'd1') mirrored = result.map(path => path.map(p => ({ x: p.y, y: p.x })));
+                    if (f === 'd2') mirrored = result.map(path => path.map(p => ({ x: 500 - p.y, y: 500 - p.x })));
+                    if (f === 'd3') mirrored = result.map(path => path.map(p => ({ x: 750 - p.y, y: 750 - p.x })));
+                    result = result.concat(mirrored);
+                }
+                return result;
+            }, [folds]);
+
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                const w = 500, h = 500;
+
+                ctx.clearRect(0, 0, w, h);
+                ctx.globalCompositeOperation = 'source-over';
+
+                const grad = ctx.createLinearGradient(0, 0, w, h);
+                grad.addColorStop(0, '#fef9c3'); grad.addColorStop(1, '#facc15');
+                ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
+
+                if (!isUnfolded) {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+                    for (let f of folds) {
+                        ctx.beginPath();
+                        if (f === 'v') { ctx.rect(0, 0, 250, 500); }
+                        if (f === 'h') { ctx.rect(0, 0, 500, 250); }
+                        if (f === 'd1') { ctx.moveTo(0,0); ctx.lineTo(500,0); ctx.lineTo(500,500); }
+                        if (f === 'd2') { ctx.moveTo(0,0); ctx.lineTo(500,0); ctx.lineTo(0,500); }
+                        if (f === 'd3') { ctx.moveTo(0,0); ctx.lineTo(750,0); ctx.lineTo(0,750); } 
+                        ctx.fill();
+                    }
+                }
+
+                ctx.setLineDash([6, 6]); ctx.strokeStyle = 'rgba(239, 68, 68, 0.7)'; ctx.lineWidth = 2;
+                for (let f of folds) {
+                    ctx.beginPath();
+                    if (f === 'v') { ctx.moveTo(250,0); ctx.lineTo(250,500); }
+                    if (f === 'h') { ctx.moveTo(0,250); ctx.lineTo(500,250); }
+                    if (f === 'd1') { ctx.moveTo(0,0); ctx.lineTo(500,500); }
+                    if (f === 'd2') { ctx.moveTo(500,0); ctx.lineTo(0,500); }
+                    if (f === 'd3') { ctx.moveTo(250,500); ctx.lineTo(500,250); }
+                    ctx.stroke();
+                }
+                ctx.setLineDash([]);
+
+                ctx.globalCompositeOperation = 'destination-out';
+                const renderPaths = isUnfolded ? getMirroredPaths(paths) : paths;
+                renderPaths.forEach(path => {
+                    if (path.length < 2) return;
+                    ctx.beginPath();
+                    path.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
+                    ctx.fill();
+                });
+
+                ctx.globalCompositeOperation = 'source-over';
+                if (currentPath.length > 0) {
+                    ctx.setLineDash([4, 4]); ctx.strokeStyle = '#333'; ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    currentPath.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
+                    ctx.stroke(); ctx.setLineDash([]);
+                }
+            }, [paths, currentPath, folds, isUnfolded, getMirroredPaths]);
+
+            const getCanvasCoords = (clientX, clientY) => {
+                const rect = containerRef.current.getBoundingClientRect(); 
+                const cx = clientX - rect.left - rect.width / 2 - transform.x;
+                const cy = clientY - rect.top - rect.height / 2 - transform.y;
+                const sx = cx / transform.scale;
+                const sy = cy / transform.scale;
+                const rad = -transform.angle * Math.PI / 180;
+                const rx = sx * Math.cos(rad) - sy * Math.sin(rad);
+                const ry = sx * Math.sin(rad) + sy * Math.cos(rad);
+                const scaleToCanvas = 500 / rect.width; 
+                return { x: (rx + rect.width / 2) * scaleToCanvas, y: (ry + rect.height / 2) * scaleToCanvas };
+            };
+
+            const handlePointerDown = (e) => {
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+                if (tool === 'move' || isUnfolded) {
+                    setIsDragging(true);
+                    setTransform(t => ({ ...t, startX: clientX, startY: clientY, initialX: t.x, initialY: t.y }));
+                    e.target.setPointerCapture(e.pointerId);
+                    return;
+                }
+
+                e.target.setPointerCapture(e.pointerId);
+                setIsDrawing(true);
+                setCurrentPath([getCanvasCoords(clientX, clientY)]);
+            };
+
+            const handlePointerMove = (e) => {
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+                if (isDragging) {
+                    const dx = clientX - transform.startX;
+                    const dy = clientY - transform.startY;
+                    setTransform(t => ({ ...t, x: t.initialX + dx, y: t.initialY + dy }));
+                    return;
+                }
+
+                if (isDrawing) {
+                    setCurrentPath(prev => [...prev, getCanvasCoords(clientX, clientY)]);
+                }
+            };
+
+            const handlePointerUp = (e) => {
+                e.target.releasePointerCapture(e.pointerId);
+                if (isDragging) setIsDragging(false);
+                if (isDrawing) {
+                    setIsDrawing(false);
+                    if (currentPath.length > 2) setPaths(prev => [...prev, currentPath]);
+                    setCurrentPath([]);
+                }
+            };
+
+            const handleWheel = (e) => {
+                if (e.deltaY !== 0) {
+                    const zoomChange = e.deltaY > 0 ? -0.1 : 0.1;
+                    setTransform(t => ({ ...t, scale: Math.max(0.5, Math.min(3, t.scale + zoomChange)) }));
+                }
+            };
+
+            const zoomIn = () => setTransform(t => ({ ...t, scale: Math.min(3, t.scale + 0.2) }));
+            const zoomOut = () => setTransform(t => ({ ...t, scale: Math.max(0.5, t.scale - 0.2) }));
+            const rotateCanvas = () => setTransform(t => ({ ...t, angle: t.angle + 15 }));
+            const resetTransform = () => setTransform({ x: 0, y: 0, scale: 1, angle: 0 });
+
+            return (
+                <div className="flex flex-col items-center animate-pop w-full h-[85vh]">
+                    
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-2 bg-white/95 p-3 rounded-2xl border-2 border-sky-200 shadow-md w-full max-w-5xl z-10 shrink-0">
+                        
+                        <div className="flex items-center gap-1.5 flex-wrap justify-center">
+                            <span className="text-sm font-black text-sky-700 bg-sky-50 px-2 py-1 rounded">1. 摺紙</span>
+                            {availableFolds.length > 0 ? (
+                                availableFolds.map(f => (
+                                    <CuteButton key={f.id} color="purple" onClick={() => handleFold(f.id)} disabled={isUnfolded}>{f.label}</CuteButton>
+                                ))
+                            ) : (
+                                <span className="text-sm font-bold text-slate-400 px-2">這張紙已經摺到底囉！</span>
+                            )}
+                            <CuteButton color="gray" onClick={undoFold} disabled={isUnfolded || folds.length === 0} title="退回上一摺"><i className="fa-solid fa-reply"></i></CuteButton>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 flex-wrap justify-center">
+                            <span className="text-sm font-black text-pink-700 bg-pink-50 px-2 py-1 rounded">2. 剪與展</span>
+                            <CuteButton color="yellow" onClick={() => setPaths(p => p.slice(0, -1))} disabled={paths.length === 0 || isUnfolded} title="復原上一剪"><i className="fa-solid fa-rotate-left"></i></CuteButton>
+                            <CuteButton color={!isUnfolded ? 'blue' : 'gray'} onClick={() => setIsUnfolded(!isUnfolded)} disabled={paths.length === 0}>
+                                {isUnfolded ? '收回紙張' : '✨ 展開作品'}
+                            </CuteButton>
+                            <CuteButton color="gray" onClick={resetPaper}><i className="fa-solid fa-file"></i> 換新紙</CuteButton>
+                        </div>
+                    </div>
+
+                    <div className="absolute left-2 md:left-6 top-[20%] flex flex-col gap-2 z-20 bg-white/90 p-2 rounded-2xl border-2 border-slate-200 shadow-lg">
+                        <CuteButton color={tool === 'draw' ? 'pink' : 'gray'} onClick={() => setTool('draw')} title="畫筆模式"><i className="fa-solid fa-pen"></i></CuteButton>
+                        <CuteButton color={tool === 'move' ? 'blue' : 'gray'} onClick={() => setTool('move')} title="移動畫布"><i className="fa-solid fa-hand"></i></CuteButton>
+                        <div className="w-full h-px bg-slate-200 my-1"></div>
+                        <CuteButton color="gray" onClick={zoomIn} title="放大"><i className="fa-solid fa-magnifying-glass-plus"></i></CuteButton>
+                        <CuteButton color="gray" onClick={zoomOut} title="縮小"><i className="fa-solid fa-magnifying-glass-minus"></i></CuteButton>
+                        <CuteButton color="gray" onClick={rotateCanvas} title="旋轉畫布"><i className="fa-solid fa-rotate-right"></i></CuteButton>
+                        <CuteButton color="gray" onClick={resetTransform} title="重置視角"><i className="fa-solid fa-compress"></i></CuteButton>
+                    </div>
+
+                    <div className="text-sky-700 font-bold mb-2 bg-sky-100 px-4 py-1 rounded-full text-xs md:text-sm shadow-sm z-10 shrink-0">
+                        {isUnfolded ? '✨ 這就是你剪出的完美對稱圖形！(可拖曳視角觀看)' : '💡 摺好紙後，【不受邊界限制】自由畫出你要剪掉的形狀！'}
+                    </div>
+
+                    <div 
+                        className="relative w-full flex-1 min-h-0 flex items-center justify-center overflow-hidden canvas-container rounded-xl border-2 border-slate-300 mx-2"
+                        onWheel={handleWheel}
+                    >
+                        <div ref={containerRef} className="relative w-[300px] h-[300px] md:w-[450px] md:h-[450px]">
+                            <canvas 
+                                ref={canvasRef} 
+                                width={500} height={500}
+                                style={{
+                                    width: '100%', height: '100%',
+                                    transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale}) rotate(${transform.angle}deg)`,
+                                    transformOrigin: 'center center',
+                                    transition: isDragging ? 'none' : 'transform 0.1s ease-out'
+                                }}
+                                className={`cursor-${tool === 'move' ? (isDragging ? 'grabbing' : 'grab') : 'crosshair'} absolute inset-0 bg-transparent border shadow-sm`}
+                                onPointerDown={handlePointerDown} 
+                                onPointerMove={handlePointerMove} 
+                                onPointerUp={handlePointerUp} 
+                                onPointerCancel={handlePointerUp}
+                            />
+                        </div>
+                        {isUnfolded && paths.length > 0 && <ShareComponent title="魔法剪紙" />}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- 十關題庫定義 ---
+        const GridFillLevels = [
+            { size: 6, points: [[1,2], [2,1], [2,2], [3,2], [4,2]] }, // 1
+            { size: 6, points: [[1,1], [1,2], [2,0], [2,1], [2,2], [3,1], [3,2], [4,2]] }, // 2
+            { size: 8, points: [[1,3], [2,2], [2,3], [3,1], [3,2], [3,3], [4,3], [5,3]] }, // 3
+            { size: 8, points: [[1,2], [1,3], [2,1], [2,2], [3,1], [3,2], [3,3], [4,1], [4,3], [5,2], [6,1], [6,3]] }, // 4
+            { size: 10, points: [[1,4], [2,3], [2,4], [3,2], [3,3], [3,4], [4,1], [4,2], [4,3], [4,4], [5,4], [6,4], [7,4], [5,2], [6,2], [7,2]] }, // 5
+            { size: 10, points: [[1,4], [2,3], [3,2], [3,3], [3,4], [4,1], [4,2], [4,4], [5,2], [5,3], [6,2], [6,3], [7,3], [7,4], [8,4]] }, // 6
+            { size: 10, points: [[1,3], [1,4], [2,3], [2,4], [3,4], [4,2], [4,3], [4,4], [5,2], [5,3], [5,4], [6,3], [6,4], [7,3], [7,4], [8,2], [8,4]] }, // 7
+            { size: 12, points: [[1,5], [2,4], [2,5], [3,3], [3,4], [3,5], [4,2], [4,3], [4,4], [4,5], [5,1], [5,2], [5,3], [5,4], [5,5], [6,5], [7,3], [7,4], [7,5], [8,4], [8,5]] }, // 8
+            { size: 12, points: [[2,1], [3,1], [3,2], [4,1], [4,2], [4,3], [3,5], [4,5], [5,1], [5,2], [5,3], [5,4], [5,5], [6,1], [6,2], [6,3], [6,4], [6,5], [7,2], [7,3], [7,4], [7,5], [8,2], [8,3], [8,4], [8,5]] }, // 9
+            { size: 14, points: [[1,6], [2,6], [3,6], [4,5], [4,6], [5,4], [5,5], [5,6], [6,3], [6,4], [6,5], [6,6], [7,2], [7,3], [7,4], [7,5], [7,6], [8,5], [8,6], [9,5], [9,6], [10,4], [10,5], [10,6], [11,6]] } // 10
+        ];
+        
+        const GridLineLevels = [
+            { size: 7, lines: [[[1,3],[2,2]], [[2,2],[2,3]], [[2,2],[4,2]], [[4,2],[4,3]]] }, // 1
+            { size: 7, lines: [[[0,3],[2,2]], [[2,2],[4,2]], [[4,2],[5,1]], [[5,1],[5,3]], [[4,2],[4,3]], [[2,2],[2,3]]] }, // 2
+            { size: 9, lines: [[[1,4],[2,2]], [[2,2],[4,3]], [[4,3],[4,4]], [[2,2],[2,3]]] }, // 3
+            { size: 9, lines: [[[1,4],[3,3]], [[3,3],[3,1]], [[3,1],[4,3]], [[4,3],[6,2]], [[6,2],[5,4]]] }, // 4
+            { size: 9, lines: [[[1,4],[4,1]], [[4,1],[4,4]], [[4,1],[8,1]], [[8,1],[8,4]], [[4,4],[8,4]]] }, // 5
+            { size: 11, lines: [[[1,5],[3,2]], [[3,2],[5,2]], [[5,2],[9,5]], [[3,2],[3,5]], [[5,2],[5,5]]] }, // 6
+            { size: 11, lines: [[[1,5],[3,3]], [[3,3],[3,5]], [[3,3],[5,2]], [[5,2],[5,5]], [[5,2],[7,1]], [[7,1],[7,5]], [[7,5],[9,5]]] }, // 7
+            { size: 11, lines: [[[1,5],[2,4]], [[2,4],[1,2]], [[1,2],[3,3]], [[3,3],[4,1]], [[4,1],[6,3]], [[6,3],[8,2]], [[8,2],[9,5]], [[9,5],[7,5]]] }, // 8
+            { size: 13, lines: [[[1,6],[3,4]], [[3,4],[6,2]], [[6,2],[9,4]], [[9,4],[11,6]], [[3,4],[5,6]], [[6,2],[8,6]], [[3,4],[9,4]]] }, // 9
+            { size: 13, lines: [[[1,6],[4,5]], [[4,5],[4,1]], [[4,1],[6,4]], [[6,4],[9,2]], [[9,2],[8,6]], [[4,5],[8,5]], [[6,4],[6,6]]] } // 10
+        ];
+        
+        const DotConnectLevels = [
+            { size: 7, lines: [[[1,3],[2,2]], [[2,2],[4,2]], [[4,2],[5,3]], [[1,3],[2,3]], [[5,3],[2,3]]] }, // 1
+            { size: 9, lines: [[[1,4],[3,2]], [[3,2],[5,2]], [[5,2],[7,4]], [[3,2],[3,4]], [[5,2],[5,4]]] }, // 2
+            { size: 9, lines: [[[1,4],[2,2]], [[2,2],[4,1]], [[4,1],[6,2]], [[6,2],[7,4]], [[2,2],[4,3]], [[4,3],[6,2]]] }, // 3
+            { size: 11, lines: [[[2,5],[3,3]], [[3,3],[5,2]], [[5,2],[7,3]], [[7,3],[8,5]], [[3,3],[5,4]], [[5,4],[7,3]], [[5,2],[5,5]]] }, // 4
+            { size: 11, lines: [[[1,5],[2,3]], [[2,3],[4,2]], [[4,2],[6,3]], [[6,3],[8,5]], [[2,3],[4,4]], [[4,4],[6,3]], [[4,2],[4,5]]] }, // 5
+            { size: 11, lines: [[[2,5],[2,4]], [[2,4],[1,2]], [[1,2],[4,4]], [[4,4],[6,5]], [[4,4],[7,2]], [[7,2],[9,5]]] }, // 6
+            { size: 13, lines: [[[2,6],[4,4]], [[4,4],[6,4]], [[6,4],[8,6]], [[4,4],[2,2]], [[2,2],[4,1]], [[6,4],[8,2]], [[8,2],[10,1]], [[4,4],[4,6]], [[6,4],[6,6]]] }, // 7
+            { size: 13, lines: [[[1,6],[3,6]], [[2,5],[3,6]], [[2,5],[1,4]], [[3,6],[5,4]], [[5,4],[5,2]], [[5,4],[7,4]], [[7,4],[6,2]], [[7,4],[9,6]], [[8,5],[9,6]], [[8,5],[10,4]]] }, // 8
+            { size: 13, lines: [[[1,6],[2,4]], [[2,4],[2,2]], [[2,2],[4,4]], [[4,4],[6,2]], [[6,2],[8,4]], [[8,4],[10,2]], [[10,2],[11,6]], [[4,4],[4,6]], [[8,4],[8,6]]] }, // 9
+            { size: 15, lines: [[[1,7],[4,4]], [[4,4],[7,1]], [[7,1],[10,4]], [[10,4],[13,7]], [[4,4],[4,7]], [[10,4],[10,7]], [[4,4],[10,4]], [[2,7],[5,4]], [[5,4],[8,7]]] } // 10
+        ];
+
+        // --- 2. 塗色方格挑戰 ---
+        const GridFillMode = () => {
+            const [level, setLevel] = useState(0);
+            const [userGrid, setUserGrid] = useState([]);
+            const [isSuccess, setIsSuccess] = useState(false);
+            const [completedLevels, setCompletedLevels] = useState([]);
+
+            const currentPuzzle = GridFillLevels[level];
+
+            useEffect(() => {
+                if (!currentPuzzle) return;
+                const size = currentPuzzle.size;
+                const grid = Array(size).fill().map(() => Array(size).fill(0));
+                currentPuzzle.points.forEach(([r, c]) => { grid[r][c] = 1; });
+                setUserGrid(grid);
+                setIsSuccess(false);
+            }, [level, currentPuzzle]);
+
+            const toggleCell = (r, c) => {
+                if (!currentPuzzle || c < currentPuzzle.size / 2 || isSuccess) return; 
+                const newGrid = [...userGrid];
+                newGrid[r] = [...newGrid[r]];
+                newGrid[r][c] = newGrid[r][c] === 1 ? 0 : 1;
+                setUserGrid(newGrid);
+                
+                let win = true;
+                const size = currentPuzzle.size;
+                for(let row = 0; row < size; row++) {
+                    for(let col = size/2; col < size; col++) {
+                        if (newGrid[row][col] !== newGrid[row][size - 1 - col]) { win = false; break; }
+                    }
+                }
+                if (win) {
+                    setIsSuccess(true);
+                    setTimeout(() => {
+                        setCompletedLevels(prev => [...prev, newGrid]);
+                        setLevel(prev => prev + 1);
+                    }, 1000);
+                }
+            };
+
+            if (level >= GridFillLevels.length) {
+                return (
+                    <div className="text-center animate-pop w-full relative h-[70vh] flex flex-col items-center">
+                        <h3 className="text-3xl font-black text-sky-600 mb-6 drop-shadow-sm mt-10">🏆 方格塗色大師 🏆</h3>
+                        <div className="flex flex-wrap justify-center gap-4 mb-6 max-w-4xl">
+                            {completedLevels.map((grid, i) => (
+                                <div key={i} className="bg-white p-2 rounded-xl shadow-md border-2 border-sky-100">
+                                    <div className="text-xs font-bold text-sky-500 mb-2">關卡 {i+1}</div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${grid[0].length}, 1fr)`, gap: '1px' }}>
+                                        {grid.map((row, r) => row.map((val, c) => (
+                                            <div key={`${r}-${c}`} className="w-3 h-3 rounded-sm" style={{ background: val ? '#38bdf8' : '#f8fafc' }}></div>
+                                        )))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <ShareComponent title="方格塗色通關" />
+                    </div>
+                );
+            }
+
+            const size = currentPuzzle.size;
+            return (
+                <div className="flex flex-col items-center animate-pop w-full h-[80vh]">
+                    <div className="bg-sky-100 text-sky-700 px-6 py-2 rounded-full text-lg font-bold mb-3 border border-sky-200 shadow-sm z-10 mt-2">
+                        ⭐ 第 {level + 1} / {GridFillLevels.length} 關
+                    </div>
+                    <div className="text-slate-500 font-bold mb-4 z-10">點擊右側空格，畫出對稱圖案！</div>
+                    
+                    <div className="relative w-full flex-1 min-h-0 flex items-center justify-center pb-10">
+                        <div className="relative bg-white p-4 rounded-2xl shadow-xl border-4 border-slate-100 h-full max-h-[600px] aspect-square">
+                            {isSuccess && (
+                                <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/80 rounded-2xl backdrop-blur-sm animate-pop">
+                                    <span className="text-5xl drop-shadow-md">🎉 過關！</span>
+                                </div>
+                            )}
+                            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${size}, 1fr)`, width: '100%', height: '100%', gap: '4px' }}>
+                                {userGrid.map((row, r) => row.map((val, c) => (
+                                    <div key={`${r}-${c}`} onClick={() => toggleCell(r, c)}
+                                        className={`rounded-lg transition-all duration-200 ${c >= size/2 ? 'cursor-pointer hover:scale-105 shadow-sm' : ''} ${val === 1 ? (c < size/2 ? 'bg-sky-400' : 'bg-pink-400 scale-105 shadow-md') : 'bg-slate-100 hover:bg-slate-200'}`}
+                                    ></div>
+                                )))}
+                            </div>
+                            <div className="absolute top-4 bottom-4 left-1/2 w-0 border-l-4 border-dashed border-red-400 z-10 transform -translate-x-1/2 pointer-events-none"></div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- 3 & 4. 共用連線引擎 ---
+        const SegmentGame = ({ levels, isGridMode, titleString }) => {
+            const [level, setLevel] = useState(0);
+            const [userSegments, setUserSegments] = useState([]);
+            const [isSuccess, setIsSuccess] = useState(false);
+            const [completedLevels, setCompletedLevels] = useState([]);
+            
+            const [drawingStart, setDrawingStart] = useState(null);
+            const [mousePos, setMousePos] = useState(null);
+            const svgRef = useRef(null);
+
+            const currentPuzzle = levels[level];
+
+            const getSegId = (p1, p2) => {
+                const s1 = `${p1[0]},${p1[1]}`; const s2 = `${p2[0]},${p2[1]}`;
+                return s1 < s2 ? `${s1}-${s2}` : `${s2}-${s1}`;
+            };
+
+            const leftSegmentsIds = React.useMemo(() => {
+                if(!currentPuzzle) return [];
+                return currentPuzzle.lines.map(l => getSegId(l[0], l[1]));
+            }, [currentPuzzle]);
+
+            // Fix 1: Filter out segments that lie entirely on the middle axis
+            const targetSegmentsIds = React.useMemo(() => {
+                if(!currentPuzzle) return [];
+                const size = currentPuzzle.size;
+                const mid = (size - 1) / 2;
+                const targets = [];
+                currentPuzzle.lines.forEach(l => {
+                    // Do not require user to trace lines strictly on the symmetry axis
+                    if (l[0][1] === mid && l[1][1] === mid) return;
+                    
+                    const m1 = [l[0][0], size - 1 - l[0][1]];
+                    const m2 = [l[1][0], size - 1 - l[1][1]];
+                    targets.push(getSegId(m1, m2));
+                });
+                return targets;
+            }, [currentPuzzle]);
+
+            useEffect(() => {
+                setUserSegments([]); setDrawingStart(null); setMousePos(null); setIsSuccess(false);
+            }, [level]);
+
+            const getSvgCoords = (e) => {
+                const svg = svgRef.current;
+                const rect = svg.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                
+                const size = currentPuzzle.size;
+                const viewBoxSize = (size - 1) * 40 + 40; 
+                const scaleX = viewBoxSize / rect.width;
+                const scaleY = viewBoxSize / rect.height;
+                
+                return {
+                    x: (clientX - rect.left) * scaleX - 20,
+                    y: (clientY - rect.top) * scaleY - 20
+                };
+            };
+
+            const findNearestDot = (x, y) => {
+                const r = Math.round(y / 40);
+                const c = Math.round(x / 40);
+                const size = currentPuzzle.size;
+                if (r >= 0 && r < size && c >= 0 && c < size) {
+                    if (Math.hypot(x - c * 40, y - r * 40) < 18) {
+                        return [r, c];
+                    }
+                }
+                return null;
+            };
+
+            const handlePointerDown = (e) => {
+                if (isSuccess) return;
+                e.target.setPointerCapture(e.pointerId);
+                const { x, y } = getSvgCoords(e);
+                const dot = findNearestDot(x, y);
+                // Can only start drawing from the right half (including axis)
+                if (dot && dot[1] >= (currentPuzzle.size - 1) / 2) {
+                    setDrawingStart(dot);
+                    setMousePos({ x: dot[1]*40, y: dot[0]*40 });
+                }
+            };
+
+            const handlePointerMove = (e) => {
+                if (!drawingStart) return;
+                const { x, y } = getSvgCoords(e);
+                setMousePos({ x, y });
+            };
+
+            const handlePointerUp = (e) => {
+                if (!drawingStart) return;
+                e.target.releasePointerCapture(e.pointerId);
+                const { x, y } = getSvgCoords(e);
+                const dot = findNearestDot(x, y);
+                
+                const mid = (currentPuzzle.size - 1) / 2;
+
+                // Validate the end point
+                if (dot && (dot[0] !== drawingStart[0] || dot[1] !== drawingStart[1]) && dot[1] >= mid) {
+                    
+                    // Fix 1: Disallow drawing strictly on the center axis to prevent blocking completion
+                    if (dot[1] === mid && drawingStart[1] === mid) {
+                        setDrawingStart(null); setMousePos(null);
+                        return;
+                    }
+
+                    const newSegId = getSegId(drawingStart, dot);
+                    let newSegs = [...userSegments];
+                    if (newSegs.includes(newSegId)) {
+                        newSegs = newSegs.filter(id => id !== newSegId);
+                    } else {
+                        newSegs.push(newSegId);
+                    }
+                    setUserSegments(newSegs);
+
+                    if (newSegs.length === targetSegmentsIds.length && targetSegmentsIds.every(id => newSegs.includes(id))) {
+                        setIsSuccess(true);
+                        setTimeout(() => {
+                            setCompletedLevels(prev => [...prev, { puzzle: currentPuzzle, userSegs: newSegs }]);
+                            setLevel(prev => prev + 1);
+                        }, 1000);
+                    }
+                }
+                setDrawingStart(null);
+                setMousePos(null);
+            };
+
+            if (level >= levels.length) {
+                return (
+                    <div className="text-center animate-pop w-full relative h-[70vh] flex flex-col items-center">
+                        <h3 className="text-3xl font-black text-sky-500 mb-6 drop-shadow-sm mt-10">🏆 {titleString}大師 🏆</h3>
+                        <div className="flex flex-wrap justify-center gap-4 mb-6 max-w-5xl">
+                            {completedLevels.map((data, i) => {
+                                const size = data.puzzle.size;
+                                const lSegs = data.puzzle.lines.map(l => getSegId(l[0], l[1]));
+                                const allSegs = [...lSegs, ...data.userSegs];
+                                return (
+                                <div key={i} className="bg-white p-3 rounded-xl shadow-md border-2 border-sky-100">
+                                    <div className="text-xs font-bold text-sky-500 mb-2">關卡 {i+1}</div>
+                                    <svg viewBox={`-10 -10 ${(size-1)*30+20} ${(size-1)*30+20}`} className={`w-20 h-20 md:w-24 md:h-24 rounded-lg ${isGridMode ? 'bg-slate-100' : 'bg-sky-50'}`}>
+                                        {allSegs.map((segId, idx) => {
+                                            const pts = segId.split('-').map(p => p.split(',').map(Number));
+                                            return <line key={idx} x1={pts[0][1]*30} y1={pts[0][0]*30} x2={pts[1][1]*30} y2={pts[1][0]*30} stroke={pts[0][1] <= size/2 ? "#38bdf8" : "#f472b6"} strokeWidth="4" strokeLinecap="round" />
+                                        })}
+                                    </svg>
+                                </div>
+                                );
+                            })}
+                        </div>
+                        <ShareComponent title={`${titleString}通關`} />
+                    </div>
+                );
+            }
+
+            const size = currentPuzzle.size;
+            const mid = (size - 1) / 2;
+            const viewBoxSize = (size - 1) * 40 + 40; 
+
+            return (
+                <div className="flex flex-col items-center animate-pop w-full h-[80vh]">
+                    <div className="bg-sky-100 text-sky-700 px-6 py-2 rounded-full text-lg font-bold mb-3 border border-sky-200 shadow-sm z-10 mt-2">
+                        ⭐ 第 {level + 1} / {levels.length} 關
+                    </div>
+                    <div className="text-slate-500 font-bold mb-4 z-10 text-center">
+                        直接用滑鼠(或手指)在右側的點 <span className="text-pink-500">拖拉連線</span> 畫出對稱圖形！<br/>(重新在原本線上拉一次即可取消)
+                    </div>
+                    
+                    <div className="relative w-full flex-1 min-h-0 flex items-center justify-center pb-10">
+                        <div className="relative bg-white p-2 md:p-6 rounded-3xl shadow-xl border-4 border-slate-100 h-full max-h-[600px] aspect-square">
+                            {isSuccess && (
+                                <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/90 rounded-2xl backdrop-blur-sm animate-pop">
+                                    <span className="text-5xl drop-shadow-md">✨ 完美！</span>
+                                </div>
+                            )}
+                            
+                            <svg 
+                                ref={svgRef}
+                                viewBox={`-20 -20 ${viewBoxSize} ${viewBoxSize}`} 
+                                className="w-full h-full cursor-crosshair touch-none"
+                                onPointerDown={handlePointerDown}
+                                onPointerMove={handlePointerMove}
+                                onPointerUp={handlePointerUp}
+                                onPointerCancel={handlePointerUp}
+                            >
+                                {isGridMode && Array(size).fill().map((_, i) => (
+                                    <g key={`grid-${i}`}>
+                                        <line x1="0" y1={i*40} x2={(size-1)*40} y2={i*40} stroke="#e2e8f0" strokeWidth="2" />
+                                        <line x1={i*40} y1="0" x2={i*40} y2={(size-1)*40} stroke="#e2e8f0" strokeWidth="2" />
+                                    </g>
+                                ))}
+                                
+                                {Array(size).fill().map((_, r) => Array(size).fill().map((_, c) => {
+                                    const isLeft = c <= mid;
+                                    const isTarget = drawingStart && drawingStart[0] === r && drawingStart[1] === c;
+                                    return (
+                                        <circle 
+                                            key={`dot-${r}-${c}`} 
+                                            cx={c*40} cy={r*40} 
+                                            r={isTarget ? 7 : (isGridMode ? 3 : 5)} 
+                                            fill={isTarget ? '#ec4899' : (isLeft ? '#38bdf8' : '#cbd5e1')} 
+                                            className="transition-all duration-200"
+                                        />
+                                    );
+                                }))}
+
+                                <line x1={mid*40} y1="-10" x2={mid*40} y2={(size-1)*40+10} stroke="#ef4444" strokeWidth="4" strokeDasharray="8 8" />
+                                
+                                {leftSegmentsIds.map(segId => {
+                                    const pts = segId.split('-').map(p => p.split(',').map(Number));
+                                    return <line key={`l-${segId}`} x1={pts[0][1]*40} y1={pts[0][0]*40} x2={pts[1][1]*40} y2={pts[1][0]*40} stroke="#38bdf8" strokeWidth="7" strokeLinecap="round" />
+                                })}
+
+                                {userSegments.map(segId => {
+                                    const pts = segId.split('-').map(p => p.split(',').map(Number));
+                                    return <line key={`u-${segId}`} x1={pts[0][1]*40} y1={pts[0][0]*40} x2={pts[1][1]*40} y2={pts[1][0]*40} stroke="#f472b6" strokeWidth="7" strokeLinecap="round" />
+                                })}
+
+                                {drawingStart && mousePos && (
+                                    <line 
+                                        x1={drawingStart[1]*40} y1={drawingStart[0]*40} 
+                                        x2={mousePos.x} y2={mousePos.y} 
+                                        stroke="#f472b6" strokeWidth="6" strokeLinecap="round" strokeDasharray="4 4" opacity="0.8"
+                                    />
+                                )}
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [mode, setMode] = useState('paper');
+
+            return (
+                <div className="w-full min-h-screen flex flex-col pt-2 md:pt-4">
+                    <div className="px-2 md:px-8 w-full flex justify-center z-20">
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white/95 backdrop-blur-sm px-4 py-2.5 rounded-2xl md:rounded-full border-2 border-sky-200 shadow-sm w-full max-w-5xl">
+                            <h1 className="text-xl md:text-2xl font-black text-sky-600 tracking-wide m-0 flex items-center shrink-0">
+                                <i className="fa-solid fa-shapes text-pink-400 mr-2"></i> 線對稱實作版
+                            </h1>
+                            
+                            <div className="flex flex-wrap justify-center gap-2 bg-slate-50 p-1.5 rounded-xl md:rounded-full border border-slate-200">
+                                <button className={`px-4 py-1.5 rounded-lg md:rounded-full text-sm md:text-base font-bold nav-btn ${mode === 'paper' ? 'active' : ''}`} onClick={() => setMode('paper')}>✂️ 剪紙</button>
+                                <button className={`px-4 py-1.5 rounded-lg md:rounded-full text-sm md:text-base font-bold nav-btn ${mode === 'grid-fill' ? 'active' : ''}`} onClick={() => setMode('grid-fill')}>🔲 塗色</button>
+                                <button className={`px-4 py-1.5 rounded-lg md:rounded-full text-sm md:text-base font-bold nav-btn ${mode === 'grid-line' ? 'active' : ''}`} onClick={() => setMode('grid-line')}>📏 畫線</button>
+                                <button className={`px-4 py-1.5 rounded-lg md:rounded-full text-sm md:text-base font-bold nav-btn ${mode === 'dot-connect' ? 'active' : ''}`} onClick={() => setMode('dot-connect')}>📍 點點</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 w-full relative z-10 flex flex-col items-center justify-start mt-2 px-2">
+                        {mode === 'paper' && <PaperCutMode />}
+                        {mode === 'grid-fill' && <GridFillMode />}
+                        {mode === 'grid-line' && <SegmentGame levels={GridLineLevels} isGridMode={true} titleString="方格畫線" />}
+                        {mode === 'dot-connect' && <SegmentGame levels={DotConnectLevels} isGridMode={false} titleString="點點連線" />}
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

@@ -17,7 +17,6 @@
             font-family: 'Nunito', 'Microsoft JhengHei', sans-serif; 
             color: #334155;
             overflow-x: hidden;
-            /* 保留網頁可以上下捲動，讓結算畫面可視 */
         }
 
         .bg-illustrations {
@@ -105,7 +104,6 @@
                 const el = ref.current;
                 if (!el) return;
                 const preventDefault = (e) => e.preventDefault();
-                // 設定 passive: false 才能強制阻擋原生瀏覽器滑動
                 el.addEventListener('touchmove', preventDefault, { passive: false });
                 el.addEventListener('gesturestart', preventDefault, { passive: false });
                 return () => {
@@ -165,7 +163,6 @@
             const canvasRef = useRef(null);
             const containerRef = useRef(null);
 
-            // 套用防觸控捲動
             usePreventTouchScroll(canvasRef);
 
             const [tool, setTool] = useState('draw'); 
@@ -509,7 +506,7 @@
             const [completedLevels, setCompletedLevels] = useState([]);
             
             const gridRef = useRef(null);
-            usePreventTouchScroll(gridRef); // 套用防觸控捲動
+            usePreventTouchScroll(gridRef); 
 
             const currentPuzzle = GridFillLevels[level];
 
@@ -598,18 +595,18 @@
             );
         };
 
-        // --- 點點與畫線模式 ---
+        // --- 點點與畫線模式 (修復智慧線段分解邏輯 & 完美恢復輔助點) ---
         const SegmentGame = ({ levels, isGridMode, titleString }) => {
             const [level, setLevel] = useState(0);
             const [userSegments, setUserSegments] = useState([]);
             const [isSuccess, setIsSuccess] = useState(false);
             const [completedLevels, setCompletedLevels] = useState([]);
             
+            const [selectedDot, setSelectedDot] = useState(null); // 恢復的輔助點功能
             const [drawingStart, setDrawingStart] = useState(null);
             const [mousePos, setMousePos] = useState(null);
             const svgRef = useRef(null);
 
-            // 套用防觸控捲動
             usePreventTouchScroll(svgRef);
 
             const currentPuzzle = levels[level];
@@ -619,11 +616,6 @@
                 const s1 = `${p1[0]},${p1[1]}`; const s2 = `${p2[0]},${p2[1]}`;
                 return s1 < s2 ? `${s1}-${s2}` : `${s2}-${s1}`;
             };
-
-            const leftSegmentsIds = React.useMemo(() => {
-                if(!currentPuzzle) return [];
-                return currentPuzzle.lines.map(l => getSegId(l[0], l[1])).filter(Boolean);
-            }, [currentPuzzle]);
 
             const targetSegmentsIds = React.useMemo(() => {
                 if(!currentPuzzle) return [];
@@ -640,7 +632,7 @@
             }, [currentPuzzle]);
 
             useEffect(() => {
-                setUserSegments([]); setDrawingStart(null); setMousePos(null); setIsSuccess(false);
+                setUserSegments([]); setDrawingStart(null); setMousePos(null); setIsSuccess(false); setSelectedDot(null);
             }, [level]);
 
             const getSvgCoords = (e) => {
@@ -672,14 +664,72 @@
                 return null;
             };
 
+            // 完美線段分解過關判定 (解決原資料長短線重疊Bug)
+            const checkSuccessLogic = (newSegs) => {
+                if (!currentPuzzle) return;
+                const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
+                const getUnitSegments = (p1, p2) => {
+                    const r1 = p1[0], c1 = p1[1];
+                    const r2 = p2[0], c2 = p2[1];
+                    const steps = gcd(Math.abs(r2 - r1), Math.abs(c2 - c1));
+                    if (steps === 0) return [];
+                    const dr = (r2 - r1) / steps;
+                    const dc = (c2 - c1) / steps;
+                    const segs = [];
+                    for (let i = 0; i < steps; i++) {
+                        segs.push(getSegId([r1 + i * dr, c1 + i * dc], [r1 + (i + 1) * dr, c1 + (i + 1) * dc]));
+                    }
+                    return segs;
+                };
+
+                const decompose = (segs) => {
+                    const units = new Set();
+                    segs.forEach(seg => {
+                        if (!seg || !seg.includes('-')) return;
+                        const pts = seg.split('-').map(p => p.split(',').map(Number));
+                        if(pts.length === 2) {
+                            getUnitSegments(pts[0], pts[1]).forEach(u => units.add(u));
+                        }
+                    });
+                    return units;
+                };
+
+                const uUnits = decompose(newSegs);
+                const tUnits = decompose(targetSegmentsIds);
+
+                if (uUnits.size === tUnits.size && tUnits.size > 0) {
+                    let win = true;
+                    for (let u of tUnits) {
+                        if (!uUnits.has(u)) { win = false; break; }
+                    }
+                    if (win) {
+                        setIsSuccess(true);
+                        setTimeout(() => {
+                            setCompletedLevels(prev => [...prev, { puzzle: currentPuzzle, userSegs: newSegs }]);
+                            setLevel(prev => prev + 1);
+                            setSelectedDot(null);
+                        }, 1000);
+                    }
+                }
+            };
+
+            // 觸控開始 (支援先點選標記)
             const handlePointerDown = (e) => {
                 if (isSuccess || !currentPuzzle) return;
                 e.target.setPointerCapture(e.pointerId);
                 const { x, y } = getSvgCoords(e);
                 const dot = findNearestDot(x, y);
+
                 if (dot && dot[1] >= (currentPuzzle.size - 1) / 2) {
-                    setDrawingStart(dot);
-                    setMousePos({ x: dot[1]*40, y: dot[0]*40 });
+                    if (selectedDot) {
+                        setDrawingStart(selectedDot);
+                        setMousePos({ x, y });
+                    } else {
+                        setDrawingStart(dot);
+                        setMousePos({ x: dot[1]*40, y: dot[0]*40 });
+                    }
+                } else {
+                    setSelectedDot(null);
                 }
             };
 
@@ -694,33 +744,33 @@
                 e.target.releasePointerCapture(e.pointerId);
                 const { x, y } = getSvgCoords(e);
                 const dot = findNearestDot(x, y);
-                
                 const mid = (currentPuzzle.size - 1) / 2;
 
-                if (dot && (dot[0] !== drawingStart[0] || dot[1] !== drawingStart[1]) && dot[1] >= mid) {
-                    if (dot[1] === mid && drawingStart[1] === mid) {
-                        setDrawingStart(null); setMousePos(null);
-                        return;
-                    }
-
-                    const newSegId = getSegId(drawingStart, dot);
-                    if (newSegId) {
-                        let newSegs = [...userSegments];
-                        if (newSegs.includes(newSegId)) {
-                            newSegs = newSegs.filter(id => id !== newSegId);
+                if (dot && dot[1] >= mid) {
+                    if (dot[0] === drawingStart[0] && dot[1] === drawingStart[1]) {
+                        // 點擊同一個點 (無拖曳)
+                        if (selectedDot && selectedDot[0] === dot[0] && selectedDot[1] === dot[1]) {
+                            setSelectedDot(null); // 點兩次取消標記
                         } else {
-                            newSegs.push(newSegId);
+                            setSelectedDot(dot); // 設置標記輔助點
                         }
-                        setUserSegments(newSegs);
-
-                        if (newSegs.length === targetSegmentsIds.length && targetSegmentsIds.every(id => newSegs.includes(id))) {
-                            setIsSuccess(true);
-                            setTimeout(() => {
-                                setCompletedLevels(prev => [...prev, { puzzle: currentPuzzle, userSegs: newSegs }]);
-                                setLevel(prev => prev + 1);
-                            }, 1000);
+                    } else {
+                        // 產生連線
+                        const newSegId = getSegId(drawingStart, dot);
+                        if (newSegId && !(dot[1] === mid && drawingStart[1] === mid)) {
+                            let newSegs = [...userSegments];
+                            if (newSegs.includes(newSegId)) {
+                                newSegs = newSegs.filter(id => id !== newSegId);
+                            } else {
+                                newSegs.push(newSegId);
+                            }
+                            setUserSegments(newSegs);
+                            checkSuccessLogic(newSegs); // 精準過關檢測
                         }
+                        setSelectedDot(null);
                     }
+                } else {
+                    setSelectedDot(null);
                 }
                 setDrawingStart(null);
                 setMousePos(null);
@@ -770,7 +820,7 @@
                         ⭐ 第 {level + 1} / {levels.length} 關
                     </div>
                     <div className="text-slate-500 font-bold mb-4 z-10 text-center">
-                        直接用滑鼠(或手指)在右側的點 <span className="text-pink-500">拖拉連線</span> 畫出對稱圖形！<br/>(重新在原本線上拉一次即可取消)
+                        直接用滑鼠(手指)在右側的點 <span className="text-pink-500">拖拉連線</span> 畫出對稱圖形！<br/>(可先點一下作記號，或直接重新畫一次取消連線)
                     </div>
                     
                     <div className="relative w-full flex-1 min-h-0 flex items-center justify-center pb-10">
@@ -799,7 +849,8 @@
                                 
                                 {Array.from({length: size}).map((_, r) => Array.from({length: size}).map((_, c) => {
                                     const isLeft = c <= mid;
-                                    const isTarget = drawingStart && drawingStart[0] === r && drawingStart[1] === c;
+                                    const isTarget = (drawingStart && drawingStart[0] === r && drawingStart[1] === c) || 
+                                                     (selectedDot && selectedDot[0] === r && selectedDot[1] === c);
                                     return (
                                         <circle 
                                             key={`dot-${r}-${c}`} 
@@ -813,7 +864,9 @@
 
                                 <line x1={mid*40} y1="-10" x2={mid*40} y2={(size-1)*40+10} stroke="#ef4444" strokeWidth="4" strokeDasharray="8 8" />
                                 
-                                {leftSegmentsIds.map(segId => {
+                                {currentPuzzle.lines.map(l => {
+                                    const segId = getSegId(l[0], l[1]);
+                                    if(!segId) return null;
                                     const pts = segId.split('-').map(p => p.split(',').map(Number));
                                     return <line key={`l-${segId}`} x1={pts[0][1]*40} y1={pts[0][0]*40} x2={pts[1][1]*40} y2={pts[1][0]*40} stroke="#38bdf8" strokeWidth="7" strokeLinecap="round" />
                                 })}

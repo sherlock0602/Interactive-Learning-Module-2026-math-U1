@@ -17,7 +17,7 @@
             font-family: 'Nunito', 'Microsoft JhengHei', sans-serif; 
             color: #334155;
             overflow-x: hidden;
-            /* 已經移除 touch-action: none; 確保結算畫面可以正常上下滑動 */
+            /* 保留網頁可以上下捲動，讓結算畫面可視 */
         }
 
         .bg-illustrations {
@@ -67,7 +67,7 @@
             box-shadow: inset 0 0 15px rgba(0,0,0,0.05);
         }
 
-        /* 針對結算畫面的自訂卷軸樣式 */
+        /* 結算畫面的捲軸樣式 */
         .custom-scrollbar::-webkit-scrollbar {
             width: 8px;
         }
@@ -98,6 +98,22 @@
 
     <script type="text/babel">
         const { useState, useEffect, useRef, useCallback } = React;
+
+        // --- 針對平板/手機的畫布手勢攔截器 (防止畫面跟著亂滑) ---
+        const usePreventTouchScroll = (ref) => {
+            useEffect(() => {
+                const el = ref.current;
+                if (!el) return;
+                const preventDefault = (e) => e.preventDefault();
+                // 設定 passive: false 才能強制阻擋原生瀏覽器滑動
+                el.addEventListener('touchmove', preventDefault, { passive: false });
+                el.addEventListener('gesturestart', preventDefault, { passive: false });
+                return () => {
+                    el.removeEventListener('touchmove', preventDefault);
+                    el.removeEventListener('gesturestart', preventDefault);
+                };
+            }, [ref]);
+        };
 
         // --- 共用 UI 元件 ---
         const CuteButton = ({ onClick, children, color = 'blue', disabled = false, className = '', title = '' }) => {
@@ -148,6 +164,9 @@
             const [currentPath, setCurrentPath] = useState([]);
             const canvasRef = useRef(null);
             const containerRef = useRef(null);
+
+            // 套用防觸控捲動
+            usePreventTouchScroll(canvasRef);
 
             const [tool, setTool] = useState('draw'); 
             const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1, angle: 0 });
@@ -417,7 +436,7 @@
                     </div>
 
                     <div 
-                        className="relative w-full flex-1 min-h-0 flex items-center justify-center overflow-hidden canvas-container rounded-xl border-2 border-slate-300 mx-2"
+                        className="relative w-full flex-1 min-h-0 flex items-center justify-center overflow-hidden canvas-container rounded-xl border-2 border-slate-300 mx-2 touch-none"
                         onWheel={handleWheel}
                     >
                         <div ref={containerRef} className="relative w-[350px] h-[350px] md:w-[500px] md:h-[500px]">
@@ -430,7 +449,7 @@
                                     transformOrigin: 'center center',
                                     transition: isDragging || isDrawing ? 'none' : 'transform 0.1s ease-out'
                                 }}
-                                className={`cursor-${tool === 'move' || isUnfolded ? (isDragging ? 'grabbing' : 'grab') : 'crosshair'} absolute inset-0 bg-transparent border shadow-sm`}
+                                className={`cursor-${tool === 'move' || isUnfolded ? (isDragging ? 'grabbing' : 'grab') : 'crosshair'} touch-none absolute inset-0 bg-transparent border shadow-sm`}
                                 onPointerDown={handlePointerDown} 
                                 onPointerMove={handlePointerMove} 
                                 onPointerUp={handlePointerUp} 
@@ -488,13 +507,16 @@
             const [userGrid, setUserGrid] = useState([]);
             const [isSuccess, setIsSuccess] = useState(false);
             const [completedLevels, setCompletedLevels] = useState([]);
+            
+            const gridRef = useRef(null);
+            usePreventTouchScroll(gridRef); // 套用防觸控捲動
 
             const currentPuzzle = GridFillLevels[level];
 
             useEffect(() => {
                 if (!currentPuzzle) return;
                 const size = currentPuzzle.size;
-                const grid = Array(size).fill().map(() => Array(size).fill(0));
+                const grid = Array.from({length: size}).map(() => Array.from({length: size}).fill(0));
                 currentPuzzle.points.forEach(([r, c]) => { grid[r][c] = 1; });
                 setUserGrid(grid);
                 setIsSuccess(false);
@@ -556,7 +578,7 @@
                     <div className="text-slate-500 font-bold mb-4 z-10">點擊右側空格，畫出對稱圖案！</div>
                     
                     <div className="relative w-full flex-1 min-h-0 flex items-center justify-center pb-10">
-                        <div className="relative bg-white p-4 rounded-2xl shadow-xl border-4 border-slate-100 h-full max-h-[600px] aspect-square">
+                        <div ref={gridRef} className="relative bg-white p-4 rounded-2xl shadow-xl border-4 border-slate-100 h-full max-h-[600px] aspect-square touch-none">
                             {isSuccess && (
                                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/80 rounded-2xl backdrop-blur-sm animate-pop">
                                     <span className="text-5xl drop-shadow-md">🎉 過關！</span>
@@ -586,6 +608,9 @@
             const [drawingStart, setDrawingStart] = useState(null);
             const [mousePos, setMousePos] = useState(null);
             const svgRef = useRef(null);
+
+            // 套用防觸控捲動
+            usePreventTouchScroll(svgRef);
 
             const currentPuzzle = levels[level];
 
@@ -749,7 +774,7 @@
                     </div>
                     
                     <div className="relative w-full flex-1 min-h-0 flex items-center justify-center pb-10">
-                        <div className="relative bg-white p-2 md:p-6 rounded-3xl shadow-xl border-4 border-slate-100 h-full max-h-[600px] aspect-square">
+                        <div className="relative bg-white p-2 md:p-6 rounded-3xl shadow-xl border-4 border-slate-100 h-full max-h-[600px] aspect-square touch-none">
                             {isSuccess && (
                                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/90 rounded-2xl backdrop-blur-sm animate-pop">
                                     <span className="text-5xl drop-shadow-md">✨ 完美！</span>
@@ -765,14 +790,14 @@
                                 onPointerUp={handlePointerUp}
                                 onPointerCancel={handlePointerUp}
                             >
-                                {isGridMode && Array(size).fill().map((_, i) => (
+                                {isGridMode && Array.from({length: size}).map((_, i) => (
                                     <g key={`grid-${i}`}>
                                         <line x1="0" y1={i*40} x2={(size-1)*40} y2={i*40} stroke="#e2e8f0" strokeWidth="2" />
                                         <line x1={i*40} y1="0" x2={i*40} y2={(size-1)*40} stroke="#e2e8f0" strokeWidth="2" />
                                     </g>
                                 ))}
                                 
-                                {Array(size).fill().map((_, r) => Array(size).fill().map((_, c) => {
+                                {Array.from({length: size}).map((_, r) => Array.from({length: size}).map((_, c) => {
                                     const isLeft = c <= mid;
                                     const isTarget = drawingStart && drawingStart[0] === r && drawingStart[1] === c;
                                     return (

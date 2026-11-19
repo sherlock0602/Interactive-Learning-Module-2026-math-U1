@@ -194,7 +194,6 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useCallback } = React;
 
-        // --- 針對平板/手機的畫布手勢攔截器 (防止畫面跟著亂滑) ---
         const usePreventTouchScroll = (ref) => {
             useEffect(() => {
                 const el = ref.current;
@@ -209,7 +208,6 @@
             }, [ref]);
         };
 
-        // --- 共用 UI 元件 ---
         const CuteButton = ({ onClick, children, color = 'blue', disabled = false, className = '', title = '' }) => {
             const colors = {
                 pink: 'bg-pink-400 hover:bg-pink-500 border-pink-500 shadow-[0_2px_0_#db2777]',
@@ -300,21 +298,7 @@
                 setFolds(folds.slice(0, -1));
             };
 
-            const getMirroredPaths = useCallback((basePaths) => {
-                let result = [...basePaths];
-                for (let i = folds.length - 1; i >= 0; i--) {
-                    const f = folds[i];
-                    let mirrored = [];
-                    if (f === 'v') mirrored = result.map(path => path.map(p => ({ x: 500 - p.x, y: p.y })));
-                    if (f === 'h') mirrored = result.map(path => path.map(p => ({ x: p.x, y: 500 - p.y })));
-                    if (f === 'd1') mirrored = result.map(path => path.map(p => ({ x: p.y, y: p.x })));
-                    if (f === 'd2') mirrored = result.map(path => path.map(p => ({ x: 500 - p.y, y: 500 - p.x })));
-                    if (f === 'd3') mirrored = result.map(path => path.map(p => ({ x: 750 - p.y, y: 750 - p.x })));
-                    result = result.concat(mirrored);
-                }
-                return result;
-            }, [folds]);
-
+            // 完美的展開渲染演算法：使用 Canvas 實體翻轉，不再計算點的鏡射
             useEffect(() => {
                 const canvas = canvasRef.current;
                 if (!canvas) return;
@@ -322,13 +306,12 @@
                 const w = 500, h = 500;
 
                 ctx.clearRect(0, 0, w, h);
-                ctx.globalCompositeOperation = 'source-over';
-
-                const grad = ctx.createLinearGradient(0, 0, w, h);
-                grad.addColorStop(0, '#fef9c3'); grad.addColorStop(1, '#facc15');
-                ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
 
                 if (!isUnfolded) {
+                    const grad = ctx.createLinearGradient(0, 0, w, h);
+                    grad.addColorStop(0, '#fef9c3'); grad.addColorStop(1, '#facc15');
+                    ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
+
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
                     for (let f of folds) {
                         ctx.beginPath();
@@ -339,37 +322,87 @@
                         if (f === 'd3') { ctx.moveTo(0,0); ctx.lineTo(750,0); ctx.lineTo(0,750); } 
                         ctx.fill();
                     }
-                }
 
-                ctx.setLineDash([6, 6]); ctx.strokeStyle = 'rgba(239, 68, 68, 0.7)'; ctx.lineWidth = 2;
-                for (let f of folds) {
-                    ctx.beginPath();
-                    if (f === 'v') { ctx.moveTo(250,0); ctx.lineTo(250,500); }
-                    if (f === 'h') { ctx.moveTo(0,250); ctx.lineTo(500,250); }
-                    if (f === 'd1') { ctx.moveTo(0,0); ctx.lineTo(500,500); }
-                    if (f === 'd2') { ctx.moveTo(500,0); ctx.lineTo(0,500); }
-                    if (f === 'd3') { ctx.moveTo(250,500); ctx.lineTo(500,250); }
-                    ctx.stroke();
-                }
-                ctx.setLineDash([]);
+                    ctx.setLineDash([6, 6]); ctx.strokeStyle = 'rgba(239, 68, 68, 0.7)'; ctx.lineWidth = 2;
+                    for (let f of folds) {
+                        ctx.beginPath();
+                        if (f === 'v') { ctx.moveTo(250,0); ctx.lineTo(250,500); }
+                        if (f === 'h') { ctx.moveTo(0,250); ctx.lineTo(500,250); }
+                        if (f === 'd1') { ctx.moveTo(0,0); ctx.lineTo(500,500); }
+                        if (f === 'd2') { ctx.moveTo(500,0); ctx.lineTo(0,500); }
+                        if (f === 'd3') { ctx.moveTo(250,500); ctx.lineTo(500,250); }
+                        ctx.stroke();
+                    }
+                    ctx.setLineDash([]);
 
-                ctx.globalCompositeOperation = 'destination-out';
-                const renderPaths = isUnfolded ? getMirroredPaths(paths) : paths;
-                renderPaths.forEach(path => {
-                    if (path.length < 2) return;
-                    ctx.beginPath();
-                    path.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
-                    ctx.fill();
-                });
+                    ctx.globalCompositeOperation = 'destination-out';
+                    paths.forEach(path => {
+                        if (path.length < 2) return;
+                        ctx.beginPath();
+                        path.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
+                        ctx.fill();
+                    });
 
-                ctx.globalCompositeOperation = 'source-over';
-                if (currentPath.length > 0) {
-                    ctx.setLineDash([4, 4]); ctx.strokeStyle = '#333'; ctx.lineWidth = 3;
-                    ctx.beginPath();
-                    currentPath.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
-                    ctx.stroke(); ctx.setLineDash([]);
+                    ctx.globalCompositeOperation = 'source-over';
+                    if (currentPath.length > 0) {
+                        ctx.setLineDash([4, 4]); ctx.strokeStyle = '#333'; ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        currentPath.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
+                        ctx.stroke(); ctx.setLineDash([]);
+                    }
+                } else {
+                    const off = document.createElement('canvas');
+                    off.width = w; off.height = h;
+                    const octx = off.getContext('2d');
+
+                    const grad = octx.createLinearGradient(0, 0, w, h);
+                    grad.addColorStop(0, '#fef9c3'); grad.addColorStop(1, '#facc15');
+                    octx.fillStyle = grad; octx.fillRect(0, 0, w, h);
+
+                    octx.globalCompositeOperation = 'destination-out';
+                    for (let f of folds) {
+                        octx.beginPath();
+                        if (f === 'v') { octx.rect(0, 0, 250, 500); }
+                        if (f === 'h') { octx.rect(0, 0, 500, 250); }
+                        if (f === 'd1') { octx.moveTo(0,0); octx.lineTo(500,0); octx.lineTo(500,500); }
+                        if (f === 'd2') { octx.moveTo(0,0); octx.lineTo(500,0); octx.lineTo(0,500); }
+                        if (f === 'd3') { octx.moveTo(0,0); octx.lineTo(750,0); octx.lineTo(0,750); }
+                        octx.fill(); 
+                    }
+
+                    paths.forEach(path => {
+                        if (path.length < 2) return;
+                        octx.beginPath();
+                        path.forEach((p, i) => { if (i === 0) octx.moveTo(p.x, p.y); else octx.lineTo(p.x, p.y); });
+                        octx.fill(); 
+                    });
+
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.drawImage(off, 0, 0);
+
+                    for (let i = folds.length - 1; i >= 0; i--) {
+                        const f = folds[i];
+                        const currentImg = document.createElement('canvas');
+                        currentImg.width = w; currentImg.height = h;
+                        currentImg.getContext('2d').drawImage(canvas, 0, 0);
+
+                        ctx.save();
+                        if (f === 'v') {
+                            ctx.transform(-1, 0, 0, 1, 500, 0); 
+                        } else if (f === 'h') {
+                            ctx.transform(1, 0, 0, -1, 0, 500); 
+                        } else if (f === 'd1') {
+                            ctx.transform(0, 1, 1, 0, 0, 0); 
+                        } else if (f === 'd2') {
+                            ctx.transform(0, -1, -1, 0, 500, 500); 
+                        } else if (f === 'd3') {
+                            ctx.transform(0, -1, -1, 0, 750, 750); 
+                        }
+                        ctx.drawImage(currentImg, 0, 0);
+                        ctx.restore();
+                    }
                 }
-            }, [paths, currentPath, folds, isUnfolded, getMirroredPaths]);
+            }, [paths, currentPath, folds, isUnfolded]);
 
             const getCanvasCoords = (clientX, clientY) => {
                 const rect = containerRef.current.getBoundingClientRect(); 

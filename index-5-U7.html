@@ -66,7 +66,6 @@
             box-shadow: inset 0 0 15px rgba(0,0,0,0.05);
         }
 
-        /* 結算畫面的捲軸樣式 */
         .custom-scrollbar::-webkit-scrollbar {
             width: 8px;
         }
@@ -98,7 +97,6 @@
     <script type="text/babel">
         const { useState, useEffect, useRef, useCallback } = React;
 
-        // --- 針對平板/手機的畫布手勢攔截器 (防止畫面跟著亂滑) ---
         const usePreventTouchScroll = (ref) => {
             useEffect(() => {
                 const el = ref.current;
@@ -113,7 +111,6 @@
             }, [ref]);
         };
 
-        // --- 共用 UI 元件 ---
         const CuteButton = ({ onClick, children, color = 'blue', disabled = false, className = '', title = '' }) => {
             const colors = {
                 pink: 'bg-pink-400 hover:bg-pink-500 border-pink-500 shadow-[0_2px_0_#db2777]',
@@ -154,7 +151,6 @@
             );
         };
 
-        // --- 1. 剪紙模擬器 ---
         const PaperCutMode = () => {
             const [folds, setFolds] = useState([]); 
             const [isUnfolded, setIsUnfolded] = useState(false);
@@ -204,21 +200,7 @@
                 setFolds(folds.slice(0, -1));
             };
 
-            const getMirroredPaths = useCallback((basePaths) => {
-                let result = [...basePaths];
-                for (let i = folds.length - 1; i >= 0; i--) {
-                    const f = folds[i];
-                    let mirrored = [];
-                    if (f === 'v') mirrored = result.map(path => path.map(p => ({ x: 500 - p.x, y: p.y })));
-                    if (f === 'h') mirrored = result.map(path => path.map(p => ({ x: p.x, y: 500 - p.y })));
-                    if (f === 'd1') mirrored = result.map(path => path.map(p => ({ x: p.y, y: p.x })));
-                    if (f === 'd2') mirrored = result.map(path => path.map(p => ({ x: 500 - p.y, y: 500 - p.x })));
-                    if (f === 'd3') mirrored = result.map(path => path.map(p => ({ x: 750 - p.y, y: 750 - p.x })));
-                    result = result.concat(mirrored);
-                }
-                return result;
-            }, [folds]);
-
+            // 完美的展開渲染演算法：使用 Canvas 實體翻轉，不再計算點的鏡射
             useEffect(() => {
                 const canvas = canvasRef.current;
                 if (!canvas) return;
@@ -226,13 +208,13 @@
                 const w = 500, h = 500;
 
                 ctx.clearRect(0, 0, w, h);
-                ctx.globalCompositeOperation = 'source-over';
-
-                const grad = ctx.createLinearGradient(0, 0, w, h);
-                grad.addColorStop(0, '#fef9c3'); grad.addColorStop(1, '#facc15');
-                ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
 
                 if (!isUnfolded) {
+                    // 繪製摺紙狀態
+                    const grad = ctx.createLinearGradient(0, 0, w, h);
+                    grad.addColorStop(0, '#fef9c3'); grad.addColorStop(1, '#facc15');
+                    ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
+
                     ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
                     for (let f of folds) {
                         ctx.beginPath();
@@ -243,37 +225,95 @@
                         if (f === 'd3') { ctx.moveTo(0,0); ctx.lineTo(750,0); ctx.lineTo(0,750); } 
                         ctx.fill();
                     }
-                }
 
-                ctx.setLineDash([6, 6]); ctx.strokeStyle = 'rgba(239, 68, 68, 0.7)'; ctx.lineWidth = 2;
-                for (let f of folds) {
-                    ctx.beginPath();
-                    if (f === 'v') { ctx.moveTo(250,0); ctx.lineTo(250,500); }
-                    if (f === 'h') { ctx.moveTo(0,250); ctx.lineTo(500,250); }
-                    if (f === 'd1') { ctx.moveTo(0,0); ctx.lineTo(500,500); }
-                    if (f === 'd2') { ctx.moveTo(500,0); ctx.lineTo(0,500); }
-                    if (f === 'd3') { ctx.moveTo(250,500); ctx.lineTo(500,250); }
-                    ctx.stroke();
-                }
-                ctx.setLineDash([]);
+                    ctx.setLineDash([6, 6]); ctx.strokeStyle = 'rgba(239, 68, 68, 0.7)'; ctx.lineWidth = 2;
+                    for (let f of folds) {
+                        ctx.beginPath();
+                        if (f === 'v') { ctx.moveTo(250,0); ctx.lineTo(250,500); }
+                        if (f === 'h') { ctx.moveTo(0,250); ctx.lineTo(500,250); }
+                        if (f === 'd1') { ctx.moveTo(0,0); ctx.lineTo(500,500); }
+                        if (f === 'd2') { ctx.moveTo(500,0); ctx.lineTo(0,500); }
+                        if (f === 'd3') { ctx.moveTo(250,500); ctx.lineTo(500,250); }
+                        ctx.stroke();
+                    }
+                    ctx.setLineDash([]);
 
-                ctx.globalCompositeOperation = 'destination-out';
-                const renderPaths = isUnfolded ? getMirroredPaths(paths) : paths;
-                renderPaths.forEach(path => {
-                    if (path.length < 2) return;
-                    ctx.beginPath();
-                    path.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
-                    ctx.fill();
-                });
+                    ctx.globalCompositeOperation = 'destination-out';
+                    paths.forEach(path => {
+                        if (path.length < 2) return;
+                        ctx.beginPath();
+                        path.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
+                        ctx.fill();
+                    });
 
-                ctx.globalCompositeOperation = 'source-over';
-                if (currentPath.length > 0) {
-                    ctx.setLineDash([4, 4]); ctx.strokeStyle = '#333'; ctx.lineWidth = 3;
-                    ctx.beginPath();
-                    currentPath.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
-                    ctx.stroke(); ctx.setLineDash([]);
+                    ctx.globalCompositeOperation = 'source-over';
+                    if (currentPath.length > 0) {
+                        ctx.setLineDash([4, 4]); ctx.strokeStyle = '#333'; ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        currentPath.forEach((p, i) => { if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y); });
+                        ctx.stroke(); ctx.setLineDash([]);
+                    }
+                } else {
+                    // 繪製展開狀態 (真實驗算)
+                    // 1. 先用一個離線 Canvas 做出「最上層那塊實體紙」+「剪洞」
+                    const off = document.createElement('canvas');
+                    off.width = w; off.height = h;
+                    const octx = off.getContext('2d');
+
+                    const grad = octx.createLinearGradient(0, 0, w, h);
+                    grad.addColorStop(0, '#fef9c3'); grad.addColorStop(1, '#facc15');
+                    octx.fillStyle = grad; octx.fillRect(0, 0, w, h);
+
+                    octx.globalCompositeOperation = 'destination-out';
+                    for (let f of folds) {
+                        octx.beginPath();
+                        if (f === 'v') { octx.rect(0, 0, 250, 500); }
+                        if (f === 'h') { octx.rect(0, 0, 500, 250); }
+                        if (f === 'd1') { octx.moveTo(0,0); octx.lineTo(500,0); octx.lineTo(500,500); }
+                        if (f === 'd2') { octx.moveTo(0,0); octx.lineTo(500,0); octx.lineTo(0,500); }
+                        if (f === 'd3') { octx.moveTo(0,0); octx.lineTo(750,0); octx.lineTo(0,750); }
+                        octx.fill(); // 把空氣區域(白色部分)直接從實體紙挖掉
+                    }
+
+                    paths.forEach(path => {
+                        if (path.length < 2) return;
+                        octx.beginPath();
+                        path.forEach((p, i) => { if (i === 0) octx.moveTo(p.x, p.y); else octx.lineTo(p.x, p.y); });
+                        octx.fill(); // 使用者的剪痕也會順便挖掉
+                    });
+
+                    // 2. 將這塊「含有完美剪痕的實體紙塊」放回主畫布
+                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.drawImage(off, 0, 0);
+
+                    // 3. 模擬真實摺紙，根據摺疊順序逆向把畫布「翻拷」過去
+                    for (let i = folds.length - 1; i >= 0; i--) {
+                        const f = folds[i];
+                        
+                        // 擷取目前畫布上已經印好的紙塊
+                        const currentImg = document.createElement('canvas');
+                        currentImg.width = w; currentImg.height = h;
+                        currentImg.getContext('2d').drawImage(canvas, 0, 0);
+
+                        ctx.save();
+                        // 根據摺痕進行鏡射變換 Matrix
+                        if (f === 'v') {
+                            ctx.transform(-1, 0, 0, 1, 500, 0); // 左右翻轉
+                        } else if (f === 'h') {
+                            ctx.transform(1, 0, 0, -1, 0, 500); // 上下翻轉
+                        } else if (f === 'd1') {
+                            ctx.transform(0, 1, 1, 0, 0, 0); // \ 對角翻轉
+                        } else if (f === 'd2') {
+                            ctx.transform(0, -1, -1, 0, 500, 500); // / 對角翻轉
+                        } else if (f === 'd3') {
+                            ctx.transform(0, -1, -1, 0, 750, 750); // 斜角 / 翻轉
+                        }
+                        // 將翻拷的影像疊加回去
+                        ctx.drawImage(currentImg, 0, 0);
+                        ctx.restore();
+                    }
                 }
-            }, [paths, currentPath, folds, isUnfolded, getMirroredPaths]);
+            }, [paths, currentPath, folds, isUnfolded]);
 
             const getCanvasCoords = (clientX, clientY) => {
                 const rect = containerRef.current.getBoundingClientRect(); 
@@ -317,7 +357,8 @@
                         setTransform(t => ({ ...t, startX: e.clientX, startY: e.clientY, initialX: t.x, initialY: t.y }));
                     } else {
                         setIsDrawing(true);
-                        setCurrentPath([getCanvasCoords(e.clientX, e.clientY)]);
+                        const p = getCanvasCoords(e.clientX, e.clientY);
+                        setCurrentPath([p]); // 完全恢復自由繪圖
                     }
                 }
             };
@@ -353,7 +394,8 @@
                             return { ...t, x: t.initialX + dx, y: t.initialY + dy };
                         });
                     } else if (isDrawing) {
-                        setCurrentPath(prev => [...prev, getCanvasCoords(e.clientX, e.clientY)]);
+                        const p = getCanvasCoords(e.clientX, e.clientY);
+                        setCurrentPath(prev => [...prev, p]); // 完全恢復自由繪圖
                     }
                 }
             };
@@ -397,9 +439,7 @@
 
             return (
                 <div className="flex flex-col items-center animate-pop w-full h-[85vh]">
-                    
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-2 bg-white/95 p-3 rounded-2xl border-2 border-sky-200 shadow-md w-full max-w-5xl z-10 shrink-0">
-                        
                         <div className="flex items-center gap-1.5 flex-wrap justify-center">
                             <span className="text-sm font-black text-sky-700 bg-sky-50 px-2 py-1 rounded">1. 摺紙</span>
                             {availableFolds.length > 0 ? (
@@ -411,7 +451,6 @@
                             )}
                             <CuteButton color="gray" onClick={undoFold} disabled={isUnfolded || folds.length === 0} title="退回上一摺"><i className="fa-solid fa-reply"></i></CuteButton>
                         </div>
-
                         <div className="flex items-center gap-1.5 flex-wrap justify-center">
                             <span className="text-sm font-black text-pink-700 bg-pink-50 px-2 py-1 rounded">2. 剪與展</span>
                             <CuteButton color="yellow" onClick={() => setPaths(p => p.slice(0, -1))} disabled={paths.length === 0 || isUnfolded} title="復原上一剪"><i className="fa-solid fa-rotate-left"></i></CuteButton>
@@ -498,7 +537,6 @@
             { size: 15, lines: [[[1,7],[4,4]], [[4,4],[7,1]], [[7,1],[10,4]], [[10,4],[13,7]], [[4,4],[4,7]], [[10,4],[10,7]], [[4,4],[10,4]], [[2,7],[5,4]], [[5,4],[8,7]]] }
         ];
 
-        // --- 塗色模式 ---
         const GridFillMode = () => {
             const [level, setLevel] = useState(0);
             const [userGrid, setUserGrid] = useState([]);
@@ -595,14 +633,13 @@
             );
         };
 
-        // --- 點點與畫線模式 (修復智慧線段分解邏輯 & 完美恢復輔助點) ---
         const SegmentGame = ({ levels, isGridMode, titleString }) => {
             const [level, setLevel] = useState(0);
             const [userSegments, setUserSegments] = useState([]);
             const [isSuccess, setIsSuccess] = useState(false);
             const [completedLevels, setCompletedLevels] = useState([]);
             
-            const [selectedDot, setSelectedDot] = useState(null); // 恢復的輔助點功能
+            const [selectedDot, setSelectedDot] = useState(null);
             const [drawingStart, setDrawingStart] = useState(null);
             const [mousePos, setMousePos] = useState(null);
             const svgRef = useRef(null);
@@ -664,7 +701,6 @@
                 return null;
             };
 
-            // 完美線段分解過關判定 (解決原資料長短線重疊Bug)
             const checkSuccessLogic = (newSegs) => {
                 if (!currentPuzzle) return;
                 const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
@@ -713,7 +749,6 @@
                 }
             };
 
-            // 觸控開始 (支援先點選標記)
             const handlePointerDown = (e) => {
                 if (isSuccess || !currentPuzzle) return;
                 e.target.setPointerCapture(e.pointerId);
@@ -748,14 +783,12 @@
 
                 if (dot && dot[1] >= mid) {
                     if (dot[0] === drawingStart[0] && dot[1] === drawingStart[1]) {
-                        // 點擊同一個點 (無拖曳)
                         if (selectedDot && selectedDot[0] === dot[0] && selectedDot[1] === dot[1]) {
-                            setSelectedDot(null); // 點兩次取消標記
+                            setSelectedDot(null);
                         } else {
-                            setSelectedDot(dot); // 設置標記輔助點
+                            setSelectedDot(dot);
                         }
                     } else {
-                        // 產生連線
                         const newSegId = getSegId(drawingStart, dot);
                         if (newSegId && !(dot[1] === mid && drawingStart[1] === mid)) {
                             let newSegs = [...userSegments];
@@ -765,7 +798,7 @@
                                 newSegs.push(newSegId);
                             }
                             setUserSegments(newSegs);
-                            checkSuccessLogic(newSegs); // 精準過關檢測
+                            checkSuccessLogic(newSegs);
                         }
                         setSelectedDot(null);
                     }

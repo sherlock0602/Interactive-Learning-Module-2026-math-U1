@@ -1,0 +1,2225 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>第 8 單元：整數四則運算 互動探索教室</title>
+  <!-- 載入 Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 載入 Google Fonts Noto Sans TC -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background: linear-gradient(180deg, #bae6fd 0%, #e0f2fe 50%, #f0f9ff 82%, #fef3c7 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+      color: #0f172a;
+    }
+
+    /* 超寬主舞台毛玻璃卡片 */
+    .widescreen-shell {
+      width: 96vw;
+      max-width: 1520px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .stage-glass {
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 2px solid rgba(255, 255, 255, 0.96);
+      box-shadow: 0 22px 50px -12px rgba(2, 132, 199, 0.2);
+    }
+
+    /* 背景雲朵慢速飄動 */
+    @keyframes floatCloudSlow {
+      0%, 100% { transform: translateX(0px); }
+      50% { transform: translateX(34px); }
+    }
+    @keyframes floatCloudFast {
+      0%, 100% { transform: translateX(0px); }
+      50% { transform: translateX(-28px); }
+    }
+    .cloud-slow { animation: floatCloudSlow 18s ease-in-out infinite; }
+    .cloud-fast { animation: floatCloudFast 12s ease-in-out infinite; }
+
+    /* 海浪微幅波動 */
+    @keyframes waveShift {
+      0%, 100% { transform: translateX(0px); }
+      50% { transform: translateX(-22px); }
+    }
+    .wave-anim { animation: waveShift 9s ease-in-out infinite; }
+
+    /* 第一拍：聚光燈呼吸閃爍光暈 */
+    @keyframes spotlightPulse {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.75);
+        transform: scale(1.06);
+      }
+      50% {
+        box-shadow: 0 0 24px 8px rgba(245, 158, 11, 0.45);
+        transform: scale(1.11);
+      }
+    }
+    .actor-spotlight {
+      animation: spotlightPulse 0.95s ease-in-out infinite;
+      z-index: 20;
+    }
+
+    @keyframes cyanSpotlight {
+      0%, 100% {
+        box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.75);
+        transform: scale(1.05);
+      }
+      50% {
+        box-shadow: 0 0 24px 8px rgba(14, 165, 233, 0.45);
+        transform: scale(1.09);
+      }
+    }
+    .cyan-spotlight {
+      animation: cyanSpotlight 0.95s ease-in-out infinite;
+      z-index: 20;
+    }
+
+    /* 物件彈跳慶祝 */
+    @keyframes popBounce {
+      0% { transform: scale(0.75); opacity: 0.4; }
+      60% { transform: scale(1.14); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .pop-bounce {
+      animation: popBounce 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    /* X 光雷射掃描光束 */
+    @keyframes xrayBeamSweep {
+      0% { left: -8%; opacity: 0; }
+      12% { opacity: 1; }
+      88% { opacity: 1; }
+      100% { left: 104%; opacity: 0; }
+    }
+    .xray-beam-run {
+      animation: xrayBeamSweep 1.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    /* 舞台進場動畫 */
+    @keyframes stageEnter {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .stage-enter {
+      animation: stageEnter 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* 平滑物理緩動曲線 */
+    .smooth-actor {
+      transition: all 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* 自訂土地拼貼滑桿（大屏與平板觸控友善） */
+    input[type="range"].land-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 18px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #0284c7 0%, #059669 100%);
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"].land-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #f59e0b;
+      border: 4px solid #ffffff;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+    input[type="range"].land-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+
+    .math-font {
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+</head>
+<body class="relative flex flex-col min-h-screen selection:bg-sky-200 selection:text-sky-900">
+
+  <!-- ==================== 晴空海岸與野柳女王頭背景插畫 ==================== -->
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
+    <!-- 暖陽與光暈 -->
+    <div class="absolute top-6 right-12 w-44 h-44 rounded-full bg-amber-300/35 blur-2xl"></div>
+    <div class="absolute top-10 right-16 w-24 h-24 rounded-full bg-amber-200/80 shadow-lg shadow-amber-300/40"></div>
+
+    <!-- 漂浮白雲 -->
+    <svg class="cloud-slow absolute top-14 left-[4%] w-52 h-24 text-white/80" viewBox="0 0 200 80" fill="currentColor">
+      <path d="M45 65h110a25 25 0 0 0 4-49.7A35 35 0 0 0 92 12a30 30 0 0 0-52 21A22 22 0 0 0 45 65z" />
+    </svg>
+    <svg class="cloud-fast absolute top-28 right-[18%] w-40 h-18 text-white/75" viewBox="0 0 200 80" fill="currentColor">
+      <path d="M45 65h110a25 25 0 0 0 4-49.7A35 35 0 0 0 92 12a30 30 0 0 0-52 21A22 22 0 0 0 45 65z" />
+    </svg>
+
+    <!-- 底部海浪與野柳女王頭剪影 -->
+    <svg class="absolute bottom-0 left-0 w-full h-56 md:h-72" viewBox="0 0 1440 320" preserveAspectRatio="none">
+      <path fill="#7dd3fc" fill-opacity="0.45" d="M0,210 Q360,185 720,205 T1440,195 L1440,320 L0,320 Z" />
+      <path class="wave-anim" fill="#38bdf8" fill-opacity="0.35" d="M0,235 Q240,215 480,235 T960,235 T1440,235 L1440,320 L0,320 Z" />
+      <g fill="#d97706" fill-opacity="0.22">
+        <path d="M980,320 L1040,255 Q1110,230 1165,215 L1173,172 Q1156,158 1162,135 Q1168,112 1196,112 Q1222,114 1226,136 Q1228,150 1212,163 L1210,182 Q1206,202 1222,218 Q1295,235 1370,268 L1440,320 Z" />
+      </g>
+      <path fill="#0284c7" fill-opacity="0.16" d="M0,275 Q320,255 640,275 T1280,275 T1440,270 L1440,320 L0,320 Z" />
+    </svg>
+  </div>
+
+  <!-- ==================== 頂部超寬導覽列 ==================== -->
+  <header class="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b-2 border-sky-200/90 shadow-sm">
+    <div class="widescreen-shell py-2.5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2.5">
+      <div class="flex items-center gap-3.5">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-600 to-emerald-600 flex items-center justify-center shadow-md shrink-0">
+          <svg class="w-8 h-8" viewBox="0 0 48 48" fill="none">
+            <path d="M24 38V22" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" />
+            <path d="M24 24C24 16 14 12 9 16C5 19 8 27 16 27C20 27 24 25 24 24Z" fill="#bef264" stroke="#ffffff" stroke-width="2" />
+            <path d="M24 21C24 13 34 9 39 13C43 16 40 24 32 24C28 24 24 22 24 21Z" fill="#fde047" stroke="#ffffff" stroke-width="2" />
+            <circle cx="24" cy="39" r="3" fill="#ffffff" />
+          </svg>
+        </div>
+        <div>
+          <div class="text-xs sm:text-sm font-bold text-sky-700">康軒五上數學 ・ 16:9 互動教學大屏</div>
+          <h1 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">第 8 單元：整數四則運算</h1>
+        </div>
+      </div>
+
+      <!-- 三小節主分頁按鈕 -->
+      <nav class="grid grid-cols-3 gap-2.5" aria-label="單元小節切換">
+        <button id="sec-tab-1" onclick="switchSection(1)" class="px-4 sm:px-6 py-2.5 rounded-2xl font-black text-sm sm:text-base transition-all flex items-center justify-center gap-2 bg-sky-600 text-white shadow">
+          <span class="px-2 py-0.5 rounded-lg bg-white text-sky-700 text-xs sm:text-sm font-black">8-1</span>
+          <span>兩步驟連除問題</span>
+        </button>
+        <button id="sec-tab-2" onclick="switchSection(2)" class="px-4 sm:px-6 py-2.5 rounded-2xl font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-2 bg-white text-slate-700 border-2 border-sky-200 hover:bg-sky-50">
+          <span class="px-2 py-0.5 rounded-lg bg-sky-100 text-sky-700 text-xs sm:text-sm font-black">8-2</span>
+          <span>多步驟問題</span>
+        </button>
+        <button id="sec-tab-3" onclick="switchSection(3)" class="px-4 sm:px-6 py-2.5 rounded-2xl font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-2 bg-white text-slate-700 border-2 border-sky-200 hover:bg-sky-50">
+          <span class="px-2 py-0.5 rounded-lg bg-sky-100 text-sky-700 text-xs sm:text-sm font-black">8-3</span>
+          <span>分配律</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- 4 階段步驟膠囊列 -->
+    <div class="bg-sky-50/90 border-t border-sky-100">
+      <div class="widescreen-shell py-2">
+        <div id="activity-stepper" class="grid grid-cols-4 gap-2.5"></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== 超寬單一主舞台容器 (96vw / max-w-1520px) ==================== -->
+  <main class="relative z-10 flex-1 flex items-center justify-center py-4 sm:py-5">
+    <section id="main-stage-card" class="widescreen-shell stage-glass rounded-3xl p-5 sm:p-7 lg:p-8 flex flex-col justify-between min-h-[600px] stage-enter">
+
+      <!-- 舞台頂部：活動標題、課本題幹、重播按鈕（無任何說教文字提示條） -->
+      <div>
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 pb-4 border-b-2 border-sky-100">
+          <div class="space-y-1">
+            <div class="flex flex-wrap items-center gap-2.5">
+              <span id="stage-pill" class="px-3.5 py-1 rounded-xl bg-sky-600 text-white font-black text-sm sm:text-base">8-1 ・ 活動 1</span>
+              <h2 id="stage-heading" class="text-2xl sm:text-3xl font-black text-slate-900">女王鉛筆分裝透視機</h2>
+            </div>
+            <p id="stage-problem" class="text-base sm:text-xl font-bold text-slate-700 pt-1">
+              老師買了 24 枝女王鉛筆，每 2 枝裝 1 包，每 3 包装 1 盒，共裝成幾盒？
+            </p>
+          </div>
+
+          <div class="flex items-center gap-3 shrink-0">
+            <button id="replay-btn" onclick="replayCurrentActivity()" class="px-5 py-3 rounded-2xl bg-amber-100 hover:bg-amber-200 border-2 border-amber-400 text-amber-950 font-black text-sm sm:text-base shadow-sm transition active:scale-95 flex items-center gap-2">
+              <span>↻ 重播本步動畫</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 舞台中央視覺互動區（每次僅呈現一個模組） -->
+        <div id="stage-canvas" class="mt-5"></div>
+      </div>
+
+      <!-- 舞台底部：大型上一個／下一個活動切換列 -->
+      <div class="mt-6 pt-4 border-t-2 border-slate-100 flex items-center justify-between gap-4">
+        <button id="btn-prev-act" onclick="goPrevActivity()" class="px-6 py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 disabled:opacity-35 disabled:cursor-not-allowed text-slate-800 font-black text-base sm:text-lg transition active:scale-95 flex items-center gap-2">
+          <span>⬅ 上一個活動</span>
+        </button>
+
+        <div id="bottom-dots" class="flex items-center gap-2.5"></div>
+
+        <button id="btn-next-act" onclick="goNextActivity()" class="px-7 py-3.5 rounded-2xl bg-sky-600 hover:bg-sky-700 disabled:opacity-35 disabled:cursor-not-allowed text-white font-black text-base sm:text-lg shadow-md transition active:scale-95 flex items-center gap-2">
+          <span id="next-act-text">下一個活動 ➡</span>
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==================== 完整視覺編排動畫與互動邏輯 ==================== -->
+  <script>
+    // =========================================================================
+    // 全局狀態與動畫排程器
+    // =========================================================================
+    let activeSection = 1;
+    let activeStep = 1;
+    let scheduledTimers = [];
+    let replayFn = null;
+
+    const unitConfig = {
+      1: {
+        code: '8-1',
+        title: '兩步驟連除問題',
+        activities: [
+          {
+            pill: '活動 1：女王鉛筆分裝透視機',
+            heading: '女王鉛筆分裝透視機（24 ÷ 2 ÷ 3 與 24 ÷ (2 × 3)）',
+            problem: '老師買了 24 枝女王鉛筆，每 2 枝裝 1 包，每 3 包装 1 盒，共裝成幾盒？'
+          },
+          {
+            pill: '活動 2：餅乾雙線分裝對照台',
+            heading: '40 片餅乾雙線分裝對照台（40 ÷ 4 ÷ 5 vs 40 ÷ 5 ÷ 4）',
+            problem: '烘焙坊有 40 片餅乾，路線 A「每 4 片一包、每 5 包一盒」與路線 B「每 5 片一包、每 4 包一盒」，各裝成幾盒？'
+          },
+          {
+            pill: '活動 3：連除好算數字配對工廠',
+            heading: '連除好算數字配對工廠（1300 ÷ 25 ÷ 4 與 8800 ÷ 16 ÷ 110）',
+            problem: '觀察算式中的數字關係，直接點擊方塊配對或播放合併動畫，找出最快速的算法！'
+          },
+          {
+            pill: '💡 本節重點總結',
+            heading: '8-1 兩步驟連除問題 ・ 核心原理總結看板',
+            problem: '回顧本小節透過分裝與數字配對所發現的三大運算規律：'
+          }
+        ]
+      },
+      2: {
+        code: '8-2',
+        title: '多步驟問題',
+        activities: [
+          {
+            pill: '活動 1：帶符號磁鐵搬家台',
+            heading: '帶符號磁鐵搬家台（加減與連減湊整百）',
+            problem: '在只有加減的算式中，把好算的數字「連同前面的運算符號」一起搬家湊整百！'
+          },
+          {
+            pill: '活動 2：雙主角蘋果思考透視鏡',
+            heading: '雙主角蘋果思考透視鏡（豆豆 vs 妮妮）',
+            problem: '3 顆蘋果賣 150 元，媽媽買 9 顆，付 1000 元鈔票，可以找回幾元？'
+          },
+          {
+            pill: '活動 3：蛋塔與布丁價目線段拆解機',
+            heading: '蛋塔與布丁價目線段拆解機',
+            problem: '買 9 個蛋塔和 5 個布丁共花 415 元，1 個蛋塔賣 35 元，1 個布丁賣幾元？'
+          },
+          {
+            pill: '💡 本節重點總結',
+            heading: '8-2 多步驟問題 ・ 核心原理總結看板',
+            problem: '回顧本小節簡化計算與多步驟應用題列式的三大關鍵：'
+          }
+        ]
+      },
+      3: {
+        code: '8-3',
+        title: '分配律',
+        activities: [
+          {
+            pill: '活動 1：露營區與烤肉區土地拼貼台',
+            heading: '露營區與烤肉區土地拼貼台（加法分配律）',
+            problem: '露營區長 22m、烤肉區長 8m，兩塊地的寬都是 16m，合起來的面積是多少平方公尺？'
+          },
+          {
+            pill: '活動 2：兒童樂園剪刀裁切模擬器',
+            heading: '兒童樂園剪刀裁切模擬器（減法分配律）',
+            problem: '兒童樂園總長 66m、寬 42m，扣除長 46m 的遊樂設施區後，戲水區面積是幾平方公尺？'
+          },
+          {
+            pill: '活動 3：X 光「隱形 × 1」與單位轉換顯微鏡',
+            heading: 'X 光「隱形 × 1」與單位轉換顯微鏡',
+            problem: '啟動 X 光掃描鏡，找出算式裡隱藏的「× 1」與不同單位之間的秘密！'
+          },
+          {
+            pill: '💡 本節重點總結',
+            heading: '8-3 分配律 ・ 核心原理總結看板',
+            problem: '回顧本小節圖形拼貼、裁切與算式變形的核心公式與破題秘訣：'
+          }
+        ]
+      }
+    };
+
+    function clearTimers() {
+      scheduledTimers.forEach(id => clearTimeout(id));
+      scheduledTimers = [];
+    }
+
+    function later(fn, ms) {
+      const id = setTimeout(fn, ms);
+      scheduledTimers.push(id);
+      return id;
+    }
+
+    function replayCurrentActivity() {
+      clearTimers();
+      if (typeof replayFn === 'function') {
+        replayFn();
+      } else {
+        renderStage();
+      }
+    }
+
+    function switchSection(sec) {
+      clearTimers();
+      activeSection = sec;
+      activeStep = 1;
+      renderStage();
+    }
+
+    function switchStep(step) {
+      clearTimers();
+      activeStep = step;
+      renderStage();
+    }
+
+    function goPrevActivity() {
+      if (activeStep > 1) {
+        switchStep(activeStep - 1);
+      } else if (activeSection > 1) {
+        activeSection--;
+        activeStep = 4;
+        clearTimers();
+        renderStage();
+      }
+    }
+
+    function goNextActivity() {
+      if (activeStep < 4) {
+        switchStep(activeStep + 1);
+      } else if (activeSection < 3) {
+        activeSection++;
+        activeStep = 1;
+        clearTimers();
+        renderStage();
+      }
+    }
+
+    function renderStage() {
+      // 更新頂部 3 個小節分頁
+      [1, 2, 3].forEach(idx => {
+        const tab = document.getElementById(`sec-tab-${idx}`);
+        const badge = tab.querySelector('span');
+        if (idx === activeSection) {
+          tab.className = 'px-4 sm:px-6 py-2.5 rounded-2xl font-black text-sm sm:text-base transition-all flex items-center justify-center gap-2 bg-sky-600 text-white shadow ring-2 ring-sky-300';
+          badge.className = 'px-2 py-0.5 rounded-lg bg-white text-sky-700 text-xs sm:text-sm font-black';
+        } else {
+          tab.className = 'px-4 sm:px-6 py-2.5 rounded-2xl font-bold text-sm sm:text-base transition-all flex items-center justify-center gap-2 bg-white text-slate-700 border-2 border-sky-200 hover:bg-sky-50';
+          badge.className = 'px-2 py-0.5 rounded-lg bg-sky-100 text-sky-700 text-xs sm:text-sm font-black';
+        }
+      });
+
+      // 更新 4 階段膠囊按鈕
+      const cfg = unitConfig[activeSection];
+      const stepper = document.getElementById('activity-stepper');
+      stepper.innerHTML = cfg.activities.map((act, i) => {
+        const stepNum = i + 1;
+        const isCurrent = stepNum === activeStep;
+        const isSummary = stepNum === 4;
+        let cls = '';
+        if (isCurrent) {
+          cls = isSummary
+            ? 'py-2.5 px-3 rounded-2xl font-black text-xs sm:text-base bg-amber-500 text-white shadow transition-all text-center truncate'
+            : 'py-2.5 px-3 rounded-2xl font-black text-xs sm:text-base bg-sky-600 text-white shadow transition-all text-center truncate';
+        } else {
+          cls = 'py-2.5 px-3 rounded-2xl font-bold text-xs sm:text-base bg-white text-slate-700 border border-sky-200 hover:bg-sky-100/70 transition-all text-center truncate';
+        }
+        return `<button onclick="switchStep(${stepNum})" class="${cls}">${act.pill}</button>`;
+      }).join('');
+
+      // 更新標題、題幹與底部按鈕
+      const act = cfg.activities[activeStep - 1];
+      document.getElementById('stage-pill').textContent = `${cfg.code} ・ ${activeStep === 4 ? '重點總結' : '活動 ' + activeStep}`;
+      document.getElementById('stage-heading').textContent = act.heading;
+      document.getElementById('stage-problem').textContent = act.problem;
+
+      const replayBtn = document.getElementById('replay-btn');
+      replayBtn.style.display = activeStep === 4 ? 'none' : 'flex';
+
+      const prevBtn = document.getElementById('btn-prev-act');
+      const nextBtn = document.getElementById('btn-next-act');
+      const nextTxt = document.getElementById('next-act-text');
+
+      prevBtn.disabled = (activeSection === 1 && activeStep === 1);
+      nextBtn.disabled = (activeSection === 3 && activeStep === 4);
+
+      if (activeStep === 4 && activeSection < 3) {
+        nextTxt.textContent = `前往 ${unitConfig[activeSection + 1].code} ${unitConfig[activeSection + 1].title} ➡`;
+      } else if (activeSection === 3 && activeStep === 4) {
+        nextTxt.textContent = '已完成全單元 🎉';
+      } else {
+        nextTxt.textContent = '下一個活動 ➡';
+      }
+
+      document.getElementById('bottom-dots').innerHTML = [1, 2, 3, 4].map(d => `
+        <button onclick="switchStep(${d})" aria-label="切換至活動 ${d}"
+          class="h-3.5 rounded-full transition-all duration-300 ${d === activeStep ? 'w-10 bg-sky-600' : 'w-3.5 bg-sky-200 hover:bg-sky-300'}">
+        </button>
+      `).join('');
+
+      const card = document.getElementById('main-stage-card');
+      card.classList.remove('stage-enter');
+      void card.offsetWidth;
+      card.classList.add('stage-enter');
+
+      const canvas = document.getElementById('stage-canvas');
+      replayFn = null;
+
+      if (activeSection === 1) {
+        if (activeStep === 1) build8_1_Act1(canvas);
+        if (activeStep === 2) build8_1_Act2(canvas);
+        if (activeStep === 3) build8_1_Act3(canvas);
+        if (activeStep === 4) build8_1_Summary(canvas);
+      } else if (activeSection === 2) {
+        if (activeStep === 1) build8_2_Act1(canvas);
+        if (activeStep === 2) build8_2_Act2(canvas);
+        if (activeStep === 3) build8_2_Act3(canvas);
+        if (activeStep === 4) build8_2_Summary(canvas);
+      } else if (activeSection === 3) {
+        if (activeStep === 1) build8_3_Act1(canvas);
+        if (activeStep === 2) build8_3_Act2(canvas);
+        if (activeStep === 3) build8_3_Act3(canvas);
+        if (activeStep === 4) build8_3_Summary(canvas);
+      }
+    }
+
+    // =========================================================================
+    // 8-1 活動 1：女王鉛筆分裝透視機（24 ÷ 2 ÷ 3 與 24 ÷ (2 × 3)）
+    // =========================================================================
+    function queenPencilSVG(id) {
+      return `
+        <svg id="${id}" class="w-7 h-20 sm:w-8 sm:h-24 mx-auto smooth-actor drop-shadow-sm" viewBox="0 0 32 92" fill="none">
+          <!-- 女王頭造型橡皮擦 -->
+          <path d="M11 21 L12 13 Q10 9 12 4 Q16 1 21 3 Q24 6 22 11 L20 15 L21 21 Z" fill="#f59e0b" stroke="#b45309" stroke-width="1.4"/>
+          <rect x="10" y="21" width="12" height="5" rx="1.5" fill="#e2e8f0" stroke="#64748b" stroke-width="1.2"/>
+          <!-- 天藍色筆身 -->
+          <rect x="10" y="26" width="12" height="48" fill="#0ea5e9" stroke="#0369a1" stroke-width="1.4"/>
+          <line x1="14" y1="26" x2="14" y2="74" stroke="#7dd3fc" stroke-width="1.4"/>
+          <!-- 筆尖 -->
+          <polygon points="10,74 22,74 16,88" fill="#fde68a" stroke="#b45309" stroke-width="1.4"/>
+          <polygon points="14,83 18,83 16,88.5" fill="#0f172a"/>
+        </svg>
+      `;
+    }
+
+    let s81_1_lastStep = 0;
+
+    function build8_1_Act1(container) {
+      s81_1_lastStep = 0;
+      replayFn = () => {
+        const last = s81_1_lastStep;
+        build8_1_Act1(container);
+        if (last >= 1) later(() => trigger8_1_Act1(1), 250);
+        if (last >= 2) later(() => trigger8_1_Act1(2), 1950);
+        if (last >= 3) later(() => trigger8_1_Act1(3), 3400);
+      };
+
+      let cratesHTML = '';
+      for (let box = 0; box < 4; box++) {
+        cratesHTML += `
+          <div id="q-crate-${box}" class="rounded-3xl p-4 border-4 border-transparent bg-white/50 smooth-actor relative flex flex-col justify-between">
+            <div id="q-crate-head-${box}" class="opacity-0 scale-75 smooth-actor text-center mb-2">
+              <span class="px-4 py-1 rounded-full bg-amber-600 text-white text-sm sm:text-base font-black shadow">第 ${box + 1} 盒</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2.5">
+        `;
+        for (let bag = 0; bag < 3; bag++) {
+          const bagIdx = box * 3 + bag;
+          cratesHTML += `
+            <div id="q-bag-${bagIdx}" class="rounded-2xl p-2 border-3 border-transparent smooth-actor flex flex-col items-center relative">
+              <div id="q-zip-${bagIdx}" class="opacity-0 w-full h-1.5 rounded-full bg-sky-400 mb-1 smooth-actor"></div>
+              <div id="q-pair-${bagIdx}" class="flex justify-center gap-2.5 smooth-actor">
+                ${queenPencilSVG(`qp-${bagIdx * 2}`)}
+                ${queenPencilSVG(`qp-${bagIdx * 2 + 1}`)}
+              </div>
+              <span id="q-bag-lbl-${bagIdx}" class="opacity-0 smooth-actor mt-1.5 px-2 py-0.5 rounded-md bg-sky-600 text-white text-xs font-black">1 包</span>
+            </div>
+          `;
+        }
+        cratesHTML += `
+            </div>
+            <div id="q-crate-foot-${box}" class="opacity-0 scale-90 smooth-actor mt-3 py-1.5 px-3 rounded-xl bg-amber-400 border-2 border-amber-600 text-amber-950 font-black text-center math-font text-sm sm:text-base shadow">
+              2 × 3 ＝ 6 枝
+            </div>
+          </div>
+        `;
+      }
+
+      container.innerHTML = `
+        <div class="space-y-5">
+          <!-- 三階段互動按鈕 -->
+          <div class="flex flex-wrap items-center justify-center gap-3.5">
+            <button id="btn-811-1" onclick="trigger8_1_Act1(1)" class="px-6 py-3.5 rounded-2xl font-black text-base sm:text-lg bg-sky-600 hover:bg-sky-700 text-white shadow-md transition active:scale-95">
+              ① 每 2 枝裝 1 包
+            </button>
+            <button id="btn-811-2" onclick="trigger8_1_Act1(2)" disabled class="px-6 py-3.5 rounded-2xl font-black text-base sm:text-lg bg-amber-500 hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed text-white shadow-md transition active:scale-95">
+              ② 每 3 包装 1 盒
+            </button>
+            <button id="btn-811-3" onclick="trigger8_1_Act1(3)" disabled class="px-6 py-3.5 rounded-2xl font-black text-base sm:text-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white shadow-md transition active:scale-95">
+              ③ X光透視拿掉透明袋
+            </button>
+          </div>
+
+          <!-- 超寬鉛筆分裝視覺舞台 -->
+          <div class="relative bg-gradient-to-b from-sky-50 to-white border-2 border-sky-200 rounded-3xl p-5 sm:p-6 overflow-hidden">
+            <!-- 青藍色 X 光雷射掃描光束 -->
+            <div id="q-xray-beam" class="hidden absolute top-0 bottom-0 w-24 bg-gradient-to-r from-transparent via-sky-400/60 to-transparent border-x-4 border-sky-400 pointer-events-none z-30 shadow-[0_0_30px_rgba(56,189,248,0.8)]"></div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+              ${cratesHTML}
+            </div>
+          </div>
+
+          <!-- 動態變形算式列 -->
+          <div id="q-formula-bar" class="bg-slate-900 text-white rounded-2xl p-5 math-font text-2xl sm:text-4xl font-black text-center shadow-lg flex flex-wrap items-center justify-center gap-3">
+            <span class="text-sky-300">24</span>
+            <span class="text-slate-400">枝女王鉛筆</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function trigger8_1_Act1(step) {
+      s81_1_lastStep = step;
+      const formula = document.getElementById('q-formula-bar');
+
+      if (step === 1) {
+        document.getElementById('btn-811-1').disabled = true;
+        document.getElementById('btn-811-2').disabled = false;
+
+        // 波浪狀由左至右依序兩兩靠攏裝袋
+        for (let i = 0; i < 12; i++) {
+          later(() => {
+            const bag = document.getElementById(`q-bag-${i}`);
+            const pair = document.getElementById(`q-pair-${i}`);
+            const zip = document.getElementById(`q-zip-${i}`);
+            const lbl = document.getElementById(`q-bag-lbl-${i}`);
+            if (!bag) return;
+            pair.classList.remove('gap-2.5');
+            pair.classList.add('gap-0.5');
+            bag.classList.add('border-sky-400', 'bg-sky-100/85', 'shadow-sm', 'scale-[1.04]');
+            zip.classList.remove('opacity-0');
+            lbl.classList.remove('opacity-0');
+            later(() => bag.classList.remove('scale-[1.04]'), 450);
+          }, i * 115);
+        }
+
+        formula.innerHTML = `
+          <span class="text-sky-300">24</span>
+          <span class="px-3 py-1 rounded-xl bg-sky-500/30 border-2 border-sky-400 text-sky-200 pop-bounce">÷ 2</span>
+          <span>＝</span>
+          <span class="text-amber-300 pop-bounce">12（包）</span>
+        `;
+      }
+
+      if (step === 2) {
+        document.getElementById('btn-811-2').disabled = true;
+        document.getElementById('btn-811-3').disabled = false;
+
+        for (let b = 0; b < 4; b++) {
+          later(() => {
+            const crate = document.getElementById(`q-crate-${b}`);
+            const head = document.getElementById(`q-crate-head-${b}`);
+            if (!crate) return;
+            crate.classList.remove('border-transparent', 'bg-white/50');
+            crate.classList.add('border-amber-500', 'bg-amber-50/95', 'shadow-lg', 'actor-spotlight');
+            head.classList.remove('opacity-0', 'scale-75');
+            later(() => crate.classList.remove('actor-spotlight'), 950);
+          }, b * 220);
+        }
+
+        formula.innerHTML = `
+          <span class="text-sky-300">24</span>
+          <span class="text-sky-300">÷ 2</span>
+          <span class="px-3 py-1 rounded-xl bg-amber-500/30 border-2 border-amber-400 text-amber-200 pop-bounce">÷ 3</span>
+          <span>＝ 12 ÷ 3 ＝</span>
+          <span class="text-emerald-300 pop-bounce">4（盒）</span>
+        `;
+      }
+
+      if (step === 3) {
+        document.getElementById('btn-811-3').disabled = true;
+        const beam = document.getElementById('q-xray-beam');
+        beam.classList.remove('hidden');
+        beam.classList.add('xray-beam-run');
+
+        // 隨著光束從左到右掃過 4 個箱子，依序透視消去藍袋並跳出 2 × 3 = 6 枝
+        for (let b = 0; b < 4; b++) {
+          later(() => {
+            for (let k = 0; k < 3; k++) {
+              const idx = b * 3 + k;
+              const bag = document.getElementById(`q-bag-${idx}`);
+              const zip = document.getElementById(`q-zip-${idx}`);
+              const lbl = document.getElementById(`q-bag-lbl-${idx}`);
+              if (bag) {
+                bag.classList.remove('border-sky-400', 'bg-sky-100/85', 'shadow-sm');
+                bag.classList.add('border-transparent', 'bg-transparent');
+                zip.classList.add('opacity-0');
+                lbl.classList.add('opacity-0');
+              }
+            }
+            // 箱內 6 枝鉛筆集體跳動閃爍
+            for (let p = 0; p < 6; p++) {
+              const pencil = document.getElementById(`qp-${b * 6 + p}`);
+              if (pencil) pencil.classList.add('pop-bounce');
+            }
+            const crate = document.getElementById(`q-crate-${b}`);
+            const foot = document.getElementById(`q-crate-foot-${b}`);
+            if (crate && foot) {
+              crate.classList.remove('border-amber-500');
+              crate.classList.add('border-emerald-500', 'border-dashed', 'bg-emerald-50/90');
+              foot.classList.remove('opacity-0', 'scale-90');
+              foot.classList.add('pop-bounce');
+            }
+          }, 260 + b * 270);
+        }
+
+        // 算式同步融合變形
+        later(() => {
+          formula.innerHTML = `
+            <span>24 ÷ 2 ÷ 3</span>
+            <span class="text-amber-300">＝</span>
+            <span>24 ÷</span>
+            <span class="px-4 py-1.5 rounded-2xl bg-emerald-500 text-slate-950 shadow-lg pop-bounce">(2 × 3)</span>
+            <span class="text-emerald-300">＝ 24 ÷ 6 ＝ 4（盒）</span>
+          `;
+        }, 1250);
+      }
+    }
+
+    // =========================================================================
+    // 8-1 活動 2：40 片餅乾雙線分裝對照台（40 ÷ 4 ÷ 5 vs 40 ÷ 5 ÷ 4）
+    // =========================================================================
+    function cookieSVG() {
+      return `
+        <svg class="w-6 h-6 sm:w-7 sm:h-7 mx-auto" viewBox="0 0 32 32" fill="none">
+          <circle cx="16" cy="16" r="13" fill="#f59e0b" stroke="#b45309" stroke-width="2"/>
+          <circle cx="16" cy="16" r="10" fill="#fbbf24"/>
+          <circle cx="12" cy="12" r="1.8" fill="#78350f"/>
+          <circle cx="20" cy="13" r="1.6" fill="#78350f"/>
+          <circle cx="15" cy="20" r="2" fill="#78350f"/>
+          <circle cx="21" cy="20" r="1.4" fill="#78350f"/>
+        </svg>
+      `;
+    }
+
+    function build8_1_Act2(container) {
+      replayFn = () => {
+        build8_1_Act2(container);
+        later(() => playDualCookieAnimation(), 250);
+      };
+
+      // 左線：2 盒 × 5 包 × 4 片
+      let trackA = '';
+      for (let b = 0; b < 2; b++) {
+        trackA += `<div id="da-box-${b}" class="rounded-2xl p-2.5 border-3 border-transparent smooth-actor">`;
+        trackA += `<div id="da-box-lbl-${b}" class="opacity-0 smooth-actor text-center text-xs sm:text-sm font-black bg-amber-500 text-white rounded-full py-0.5 mb-1.5">第 ${b + 1} 盒</div>`;
+        trackA += `<div class="grid grid-cols-5 gap-1.5">`;
+        for (let p = 0; p < 5; p++) {
+          const idx = b * 5 + p;
+          trackA += `<div id="da-bag-${idx}" class="p-1.5 rounded-xl border-2 border-transparent flex flex-col items-center gap-1 smooth-actor">`;
+          for (let c = 0; c < 4; c++) trackA += cookieSVG();
+          trackA += `</div>`;
+        }
+        trackA += `</div></div>`;
+      }
+
+      // 右線：2 盒 × 4 包 × 5 片
+      let trackB = '';
+      for (let b = 0; b < 2; b++) {
+        trackB += `<div id="db-box-${b}" class="rounded-2xl p-2.5 border-3 border-transparent smooth-actor">`;
+        trackB += `<div id="db-box-lbl-${b}" class="opacity-0 smooth-actor text-center text-xs sm:text-sm font-black bg-amber-500 text-white rounded-full py-0.5 mb-1.5">第 ${b + 1} 盒</div>`;
+        trackB += `<div class="grid grid-cols-4 gap-1.5">`;
+        for (let p = 0; p < 4; p++) {
+          const idx = b * 4 + p;
+          trackB += `<div id="db-bag-${idx}" class="p-1.5 rounded-xl border-2 border-transparent flex flex-col items-center gap-1 smooth-actor">`;
+          for (let c = 0; c < 5; c++) trackB += cookieSVG();
+          trackB += `</div>`;
+        }
+        trackB += `</div></div>`;
+      }
+
+      container.innerHTML = `
+        <div class="space-y-5">
+          <div class="flex justify-center">
+            <button id="btn-dual-cookie" onclick="playDualCookieAnimation()" class="px-8 py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black text-lg sm:text-xl shadow-lg transition active:scale-95">
+              ▶ 雙線同步分裝動畫
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 relative items-stretch">
+            <!-- 路線 A -->
+            <div class="bg-sky-50/90 border-2 border-sky-300 rounded-3xl p-5 flex flex-col justify-between">
+              <div class="flex items-center justify-between mb-3">
+                <span class="px-3.5 py-1 rounded-xl bg-sky-600 text-white font-black text-sm sm:text-base">路線 A：4 片一包 → 5 包一盒</span>
+                <span id="da-status" class="px-3 py-1 rounded-full bg-white border border-sky-300 font-black text-sky-800 text-sm">40 片</span>
+              </div>
+              <div class="grid grid-cols-2 gap-3 my-2">${trackA}</div>
+              <div id="da-formula" class="mt-3 bg-white rounded-2xl p-3.5 border-2 border-sky-200 math-font text-xl sm:text-2xl font-black text-center text-slate-900">
+                40 ÷ <span class="text-sky-600">4</span> ÷ <span class="text-amber-600">5</span>
+              </div>
+            </div>
+
+            <!-- 中央發光等號能量橋 -->
+            <div id="dual-equals-bridge" class="opacity-0 scale-50 smooth-actor hidden lg:flex items-center justify-center absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none">
+              <div class="w-20 h-20 rounded-full bg-emerald-500 border-4 border-white text-white font-black text-4xl flex items-center justify-center shadow-[0_0_35px_rgba(16,185,129,0.95)]">
+                ＝
+              </div>
+            </div>
+
+            <!-- 路線 B -->
+            <div class="bg-indigo-50/90 border-2 border-indigo-300 rounded-3xl p-5 flex flex-col justify-between">
+              <div class="flex items-center justify-between mb-3">
+                <span class="px-3.5 py-1 rounded-xl bg-indigo-600 text-white font-black text-sm sm:text-base">路線 B：5 片一包 → 4 包一盒</span>
+                <span id="db-status" class="px-3 py-1 rounded-full bg-white border border-indigo-300 font-black text-indigo-800 text-sm">40 片</span>
+              </div>
+              <div class="grid grid-cols-2 gap-3 my-2">${trackB}</div>
+              <div id="db-formula" class="mt-3 bg-white rounded-2xl p-3.5 border-2 border-indigo-200 math-font text-xl sm:text-2xl font-black text-center text-slate-900">
+                40 ÷ <span class="text-indigo-600">5</span> ÷ <span class="text-amber-600">4</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 底部總結算式列 -->
+          <div id="dual-final-bar" class="opacity-0 translate-y-3 smooth-actor bg-emerald-600 text-white rounded-2xl p-4 math-font text-xl sm:text-3xl font-black text-center shadow-lg">
+            40 ÷ 4 ÷ 5 ＝ 40 ÷ 5 ÷ 4 ＝ 2（盒）
+          </div>
+        </div>
+      `;
+    }
+
+    function playDualCookieAnimation() {
+      const btn = document.getElementById('btn-dual-cookie');
+      btn.disabled = true;
+      btn.classList.add('opacity-50');
+
+      // 第 1 拍：波浪裝袋
+      for (let i = 0; i < 10; i++) {
+        later(() => {
+          const bag = document.getElementById(`da-bag-${i}`);
+          if (bag) bag.classList.add('border-sky-400', 'bg-white', 'shadow-sm');
+        }, i * 95);
+      }
+      for (let i = 0; i < 8; i++) {
+        later(() => {
+          const bag = document.getElementById(`db-bag-${i}`);
+          if (bag) bag.classList.add('border-indigo-400', 'bg-white', 'shadow-sm');
+        }, i * 115);
+      }
+
+      later(() => {
+        const stA = document.getElementById('da-status');
+        const stB = document.getElementById('db-status');
+        stA.textContent = '10 包';
+        stB.textContent = '8 包';
+        stA.classList.add('cyan-spotlight');
+        stB.classList.add('cyan-spotlight');
+        document.getElementById('da-formula').innerHTML = `<span class="text-sky-600">10</span> ÷ <span class="text-amber-600">5</span>`;
+        document.getElementById('db-formula').innerHTML = `<span class="text-indigo-600">8</span> ÷ <span class="text-amber-600">4</span>`;
+      }, 1050);
+
+      // 第 2 拍（停頓 0.8s 對比後）：裝進禮盒
+      later(() => {
+        document.getElementById('da-status').classList.remove('cyan-spotlight');
+        document.getElementById('db-status').classList.remove('cyan-spotlight');
+
+        [0, 1].forEach(b => {
+          const boxA = document.getElementById(`da-box-${b}`);
+          const lblA = document.getElementById(`da-box-lbl-${b}`);
+          if (boxA && lblA) {
+            boxA.classList.add('border-amber-500', 'bg-amber-50/95', 'shadow-md');
+            lblA.classList.remove('opacity-0');
+          }
+          const boxB = document.getElementById(`db-box-${b}`);
+          const lblB = document.getElementById(`db-box-lbl-${b}`);
+          if (boxB && lblB) {
+            boxB.classList.add('border-amber-500', 'bg-amber-50/95', 'shadow-md');
+            lblB.classList.remove('opacity-0');
+          }
+        });
+
+        const stA = document.getElementById('da-status');
+        const stB = document.getElementById('db-status');
+        stA.textContent = '2 盒';
+        stB.textContent = '2 盒';
+        stA.className = 'px-4 py-1 rounded-full bg-emerald-600 text-white font-black text-base pop-bounce';
+        stB.className = 'px-4 py-1 rounded-full bg-emerald-600 text-white font-black text-base pop-bounce';
+
+        document.getElementById('da-formula').innerHTML = `40 ÷ 4 ÷ 5 ＝ <span class="text-emerald-600">2（盒）</span>`;
+        document.getElementById('db-formula').innerHTML = `40 ÷ 5 ÷ 4 ＝ <span class="text-emerald-600">2（盒）</span>`;
+      }, 2150);
+
+      // 第 3 拍：中間射出綠色發光 ＝ 連線
+      later(() => {
+        const bridge = document.getElementById('dual-equals-bridge');
+        const bar = document.getElementById('dual-final-bar');
+        if (bridge) {
+          bridge.classList.remove('opacity-0', 'scale-50');
+          bridge.classList.add('pop-bounce');
+        }
+        if (bar) bar.classList.remove('opacity-0', 'translate-y-3');
+      }, 3050);
+    }
+
+    // =========================================================================
+    // 8-1 活動 3：連除好算數字配對工廠（1300 ÷ 25 ÷ 4 與 8800 ÷ 16 ÷ 110）
+    // =========================================================================
+    let s81_3_prob = 1;
+    let s81_3_selected = [];
+
+    function build8_1_Act3(container, prob = 1) {
+      s81_3_prob = prob;
+      s81_3_selected = [];
+      clearTimers();
+
+      replayFn = () => {
+        build8_1_Act3(container, s81_3_prob);
+        later(() => playDivFactoryAnimation(), 250);
+      };
+
+      const isP1 = prob === 1;
+      const blocks = isP1
+        ? [
+            { id: 'df-b0', text: '1300', role: 'other', cls: 'bg-white border-slate-300 text-slate-900' },
+            { id: 'df-b1', text: '÷ 25', role: 'pair', cls: 'bg-sky-50 border-sky-400 text-sky-900' },
+            { id: 'df-b2', text: '÷ 4', role: 'pair', cls: 'bg-sky-50 border-sky-400 text-sky-900' }
+          ]
+        : [
+            { id: 'df-b0', text: '8800', role: 'pair', cls: 'bg-emerald-50 border-emerald-400 text-emerald-900' },
+            { id: 'df-b1', text: '÷ 16', role: 'other', cls: 'bg-white border-slate-300 text-slate-900' },
+            { id: 'df-b2', text: '÷ 110', role: 'pair', cls: 'bg-emerald-50 border-emerald-400 text-emerald-900' }
+          ];
+
+      container.innerHTML = `
+        <div class="space-y-5">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex gap-2.5">
+              <button onclick="build8_1_Act3(document.getElementById('stage-canvas'), 1)" class="px-5 py-2.5 rounded-2xl font-black text-sm sm:text-base transition ${isP1 ? 'bg-sky-600 text-white shadow' : 'bg-white border-2 border-sky-200 text-slate-700'}">
+                題目 1：1300 ÷ 25 ÷ 4
+              </button>
+              <button onclick="build8_1_Act3(document.getElementById('stage-canvas'), 2)" class="px-5 py-2.5 rounded-2xl font-black text-sm sm:text-base transition ${!isP1 ? 'bg-emerald-600 text-white shadow' : 'bg-white border-2 border-emerald-200 text-slate-700'}">
+                題目 2：8800 ÷ 16 ÷ 110
+              </button>
+            </div>
+
+            <button id="btn-df-play" onclick="playDivFactoryAnimation()" class="px-7 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black text-base sm:text-lg shadow-md transition active:scale-95">
+              ▶ 播放合併動畫
+            </button>
+          </div>
+
+          <!-- 寬幅數字方塊工作台 -->
+          <div class="bg-gradient-to-b from-slate-50 to-sky-50/70 border-2 border-sky-200 rounded-3xl p-8 min-h-[300px] flex flex-col items-center justify-center space-y-6 relative overflow-hidden">
+            <div id="df-workbench" class="flex flex-wrap items-center justify-center gap-6 math-font text-3xl sm:text-5xl font-black">
+              ${blocks.map(b => `
+                <button id="${b.id}" onclick="handleDivBlockClick('${b.id}', '${b.role}')"
+                  class="px-8 py-6 rounded-3xl border-4 shadow-lg smooth-actor cursor-pointer hover:scale-105 ${b.cls}">
+                  ${b.text}
+                </button>
+              `).join('')}
+            </div>
+
+            <!-- 步驟演變軌跡 -->
+            <div id="df-morph-1" class="opacity-0 scale-90 smooth-actor px-7 py-3.5 rounded-2xl bg-amber-100 border-3 border-amber-400 math-font text-2xl sm:text-3xl font-black text-slate-900 shadow"></div>
+            <div id="df-morph-2" class="opacity-0 scale-90 smooth-actor px-8 py-3.5 rounded-2xl bg-emerald-600 text-white math-font text-3xl sm:text-4xl font-black shadow-lg"></div>
+          </div>
+        </div>
+      `;
+    }
+
+    function handleDivBlockClick(id, role) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (role !== 'pair') {
+        el.style.transform = 'translateX(-8px)';
+        later(() => { el.style.transform = 'translateX(8px)'; }, 100);
+        later(() => { el.style.transform = 'translateX(0px)'; }, 200);
+        return;
+      }
+      if (!s81_3_selected.includes(id)) {
+        s81_3_selected.push(id);
+        el.classList.add('actor-spotlight', 'ring-4', 'ring-amber-400');
+      }
+      if (s81_3_selected.length === 2) {
+        playDivFactoryAnimation();
+      }
+    }
+
+    function playDivFactoryAnimation() {
+      const btn = document.getElementById('btn-df-play');
+      if (btn) {
+        btn.disabled = true;
+        btn.classList.add('opacity-50');
+      }
+
+      const b0 = document.getElementById('df-b0');
+      const b1 = document.getElementById('df-b1');
+      const b2 = document.getElementById('df-b2');
+      const m1 = document.getElementById('df-morph-1');
+      const m2 = document.getElementById('df-morph-2');
+
+      if (s81_3_prob === 1) {
+        // 第 1 拍：÷ 25 與 ÷ 4 亮金光，1300 暫時變淡
+        b0.style.opacity = '0.35';
+        b1.classList.add('actor-spotlight', 'bg-amber-100', 'border-amber-500');
+        b2.classList.add('actor-spotlight', 'bg-amber-100', 'border-amber-500');
+
+        // 第 2 拍：÷ 25 與 ÷ 4 滑動靠攏融合為 ÷ (25 × 4) -> ÷ 100
+        later(() => {
+          b1.classList.remove('actor-spotlight');
+          b2.classList.remove('actor-spotlight');
+          b1.style.transform = 'translateX(14px) scale(1.06)';
+          b2.style.transform = 'translateX(-14px) scale(1.06)';
+          m1.innerHTML = `＝ 1300 ÷ <span class="px-2.5 py-0.5 rounded-xl bg-amber-400 text-slate-950">(25 × 4)</span> ＝ 1300 ÷ <span class="text-sky-700">100</span>`;
+          m1.classList.remove('opacity-0', 'scale-90');
+          m1.classList.add('pop-bounce');
+        }, 1050);
+
+        // 第 3 拍：1300 亮起並消去兩個 0，得出 13
+        later(() => {
+          b0.style.opacity = '1';
+          b0.innerHTML = `13<span id="zero-slash" class="inline-block text-amber-600 line-through decoration-4 transition-all duration-700">00</span>`;
+          b0.classList.add('cyan-spotlight');
+        }, 2200);
+
+        later(() => {
+          const zs = document.getElementById('zero-slash');
+          if (zs) {
+            zs.style.opacity = '0';
+            zs.style.transform = 'scale(0)';
+          }
+          b0.classList.remove('cyan-spotlight');
+          m2.innerHTML = `＝ 13`;
+          m2.classList.remove('opacity-0', 'scale-90');
+          m2.classList.add('pop-bounce');
+        }, 3150);
+      } else {
+        // 題目 2：8800 ÷ 16 ÷ 110
+        // 第 1 拍：8800 與 ÷ 110 亮金光，÷ 16 變淡
+        b1.style.opacity = '0.35';
+        b0.classList.add('actor-spotlight', 'bg-amber-100', 'border-amber-500');
+        b2.classList.add('actor-spotlight', 'bg-amber-100', 'border-amber-500');
+
+        // 第 2 拍：÷ 110 畫出拋物線飛越 ÷ 16 交換位置
+        later(() => {
+          b2.classList.remove('actor-spotlight');
+          const dist = b1.offsetWidth + 24;
+          b2.style.transform = `translate(${-dist / 2}px, -54px) scale(1.08)`;
+          b1.style.transform = `translateX(${b2.offsetWidth + 24}px)`;
+        }, 950);
+
+        later(() => {
+          const dist = b1.offsetWidth + 24;
+          b2.style.transform = `translate(${-dist}px, 0px)`;
+          m1.innerHTML = `＝ <span class="px-2.5 py-0.5 rounded-xl bg-emerald-300 text-slate-950">(8800 ÷ 110)</span> ÷ 16 ＝ <span class="text-emerald-800">80</span> ÷ 16`;
+          m1.classList.remove('opacity-0', 'scale-90');
+          m1.classList.add('pop-bounce');
+        }, 1650);
+
+        // 第 3 拍：得出 5
+        later(() => {
+          b0.classList.remove('actor-spotlight');
+          b1.style.opacity = '1';
+          m2.innerHTML = `＝ 5`;
+          m2.classList.remove('opacity-0', 'scale-90');
+          m2.classList.add('pop-bounce');
+        }, 2800);
+      }
+    }
+
+    // =========================================================================
+    // 8-1 活動 4：💡 8-1 重點原理總結看板
+    // =========================================================================
+    function build8_1_Summary(container) {
+      container.innerHTML = `
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="rounded-3xl bg-sky-50 border-3 border-sky-300 p-6 flex flex-col justify-between shadow-sm">
+            <div>
+              <span class="px-3.5 py-1 rounded-full bg-sky-600 text-white text-sm font-black">原理 ①</span>
+              <h3 class="text-2xl font-black text-sky-950 mt-3">連除兩數 ＝ 除以兩數之積</h3>
+              <p class="text-base font-bold text-slate-700 mt-3 leading-relaxed">
+                先每 <span class="text-sky-700 font-black">b</span> 個一包、再每 <span class="text-sky-700 font-black">c</span> 包装一盒，拿掉袋子後，每盒直接裝了 <span class="text-amber-700 font-black">(b × c)</span> 個！
+              </p>
+            </div>
+            <div class="mt-5 p-4 rounded-2xl bg-white border-2 border-sky-200 math-font text-xl sm:text-2xl font-black text-center text-sky-950">
+              a ÷ b ÷ c ＝ a ÷ (b <span class="text-amber-600">×</span> c)
+            </div>
+          </div>
+
+          <div class="rounded-3xl bg-indigo-50 border-3 border-indigo-300 p-6 flex flex-col justify-between shadow-sm">
+            <div>
+              <span class="px-3.5 py-1 rounded-full bg-indigo-600 text-white text-sm font-black">原理 ②</span>
+              <h3 class="text-2xl font-black text-indigo-950 mt-3">除數交換順序，結果相同</h3>
+              <p class="text-base font-bold text-slate-700 mt-3 leading-relaxed">
+                連除兩個數時，先除以哪一個除數，最後得到的盒數都完全一樣！
+              </p>
+            </div>
+            <div class="mt-5 p-4 rounded-2xl bg-white border-2 border-indigo-200 math-font text-xl sm:text-2xl font-black text-center text-indigo-950">
+              a ÷ b ÷ c ＝ a ÷ c ÷ b
+            </div>
+          </div>
+
+          <div class="rounded-3xl bg-amber-50 border-3 border-amber-300 p-6 flex flex-col justify-between shadow-sm">
+            <div>
+              <span class="px-3.5 py-1 rounded-full bg-amber-500 text-white text-sm font-black">解題秘訣 ③</span>
+              <h3 class="text-2xl font-black text-amber-950 mt-3">湊整百整千，或先整除</h3>
+              <p class="text-base font-bold text-slate-700 mt-3 leading-relaxed">
+                看到 <span class="font-black text-amber-800">25 × 4 ＝ 100</span> 或 <span class="font-black text-amber-800">125 × 8 ＝ 1000</span>，先把兩除數相乘；若前面就能先整除，就讓除數跳躍交換！
+              </p>
+            </div>
+            <div class="mt-5 p-4 rounded-2xl bg-white border-2 border-amber-200 math-font text-lg sm:text-xl font-black text-center text-amber-950">
+              1300 ÷ (25 × 4) ＝ 1300 ÷ 100 ＝ 13
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // 8-2 活動 1：帶符號磁鐵搬家台（加減與連減湊整百）
+    // =========================================================================
+    let s82_1_mode = 1;
+
+    function build8_2_Act1(container, mode = 1) {
+      s82_1_mode = mode;
+      clearTimers();
+
+      replayFn = () => {
+        build8_2_Act1(container, s82_1_mode);
+        later(() => playMagnetTrackAnimation(), 250);
+      };
+
+      const isAdd = mode === 1;
+      const tiles = isAdd
+        ? [
+            { id: 'mg-0', text: '120', cls: 'bg-sky-50 border-sky-400 text-sky-950' },
+            { id: 'mg-1', text: '＋ 195', cls: 'bg-amber-50 border-amber-400 text-amber-950' },
+            { id: 'mg-2', text: '＋ 105', cls: 'bg-amber-50 border-amber-400 text-amber-950' },
+            { id: 'mg-3', text: '＋ 80', cls: 'bg-sky-50 border-sky-400 text-sky-950' }
+          ]
+        : [
+            { id: 'mg-0', text: '500', cls: 'bg-white border-slate-400 text-slate-950' },
+            { id: 'mg-1', text: '－ 175', cls: 'bg-amber-50 border-amber-500 text-amber-950' },
+            { id: 'mg-2', text: '－ 125', cls: 'bg-amber-50 border-amber-500 text-amber-950' },
+            { id: 'mg-3', text: '－ 130', cls: 'bg-sky-50 border-sky-400 text-sky-950' }
+          ];
+
+      container.innerHTML = `
+        <div class="space-y-5">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex gap-2.5">
+              <button onclick="build8_2_Act1(document.getElementById('stage-canvas'), 1)" class="px-5 py-2.5 rounded-2xl font-black text-sm sm:text-base transition ${isAdd ? 'bg-sky-600 text-white shadow' : 'bg-white border-2 border-sky-200 text-slate-700'}">
+                題目 1：120 ＋ 195 ＋ 105 ＋ 80（連加湊整百）
+              </button>
+              <button onclick="build8_2_Act1(document.getElementById('stage-canvas'), 2)" class="px-5 py-2.5 rounded-2xl font-black text-sm sm:text-base transition ${!isAdd ? 'bg-amber-600 text-white shadow' : 'bg-white border-2 border-amber-200 text-slate-700'}">
+                題目 2：500 － 175 － 125 － 130（連減合起來減）
+              </button>
+            </div>
+
+            <button id="btn-mg-play" onclick="playMagnetTrackAnimation()" class="px-7 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black text-base sm:text-lg shadow-md transition active:scale-95">
+              ▶ 動畫演示湊整百
+            </button>
+          </div>
+
+          <!-- 超寬磁鐵軌道舞台 -->
+          <div class="bg-gradient-to-b from-sky-50/90 to-white border-2 border-sky-200 rounded-3xl p-8 min-h-[300px] flex flex-col items-center justify-center space-y-6">
+            <div id="mg-rail" class="flex flex-wrap items-center justify-center gap-4 sm:gap-6 math-font text-2xl sm:text-4xl font-black">
+              ${tiles.map(t => `
+                <div id="${t.id}" class="px-6 py-5 rounded-3xl border-4 shadow-md smooth-actor ${t.cls}">
+                  ${t.text}
+                </div>
+              `).join('')}
+            </div>
+
+            <div id="mg-step-1" class="opacity-0 scale-90 smooth-actor px-7 py-3.5 rounded-2xl bg-amber-100 border-3 border-amber-400 math-font text-2xl sm:text-3xl font-black text-slate-900 shadow"></div>
+            <div id="mg-step-2" class="opacity-0 scale-90 smooth-actor px-8 py-3.5 rounded-2xl bg-emerald-600 text-white math-font text-2xl sm:text-4xl font-black shadow-lg"></div>
+          </div>
+        </div>
+      `;
+    }
+
+    function playMagnetTrackAnimation() {
+      const btn = document.getElementById('btn-mg-play');
+      if (btn) {
+        btn.disabled = true;
+        btn.classList.add('opacity-50');
+      }
+
+      const t0 = document.getElementById('mg-0');
+      const t1 = document.getElementById('mg-1');
+      const t2 = document.getElementById('mg-2');
+      const t3 = document.getElementById('mg-3');
+      const s1 = document.getElementById('mg-step-1');
+      const s2 = document.getElementById('mg-step-2');
+
+      if (s82_1_mode === 1) {
+        // 120 + 195 + 105 + 80
+        // 第 1 拍：互補磁鐵升起閃爍
+        t0.classList.add('cyan-spotlight');
+        t3.classList.add('cyan-spotlight');
+        t1.classList.add('actor-spotlight');
+        t2.classList.add('actor-spotlight');
+
+        // 第 2 拍：+ 80 飛躍滑到 120 旁邊
+        later(() => {
+          t0.classList.remove('cyan-spotlight');
+          t3.classList.remove('cyan-spotlight');
+          t1.classList.remove('actor-spotlight');
+          t2.classList.remove('actor-spotlight');
+
+          const shiftLeft = t1.offsetWidth + t2.offsetWidth + 48;
+          const shiftRight = t3.offsetWidth + 24;
+          t3.style.transform = `translate(${-shiftLeft}px, -44px)`;
+          t1.style.transform = `translateX(${shiftRight}px)`;
+          t2.style.transform = `translateX(${shiftRight}px)`;
+        }, 950);
+
+        later(() => {
+          const shiftLeft = t1.offsetWidth + t2.offsetWidth + 48;
+          t3.style.transform = `translate(${-shiftLeft}px, 0px)`;
+          s1.innerHTML = `＝ <span class="px-2.5 py-0.5 rounded-xl bg-sky-300 text-slate-950">(120 ＋ 80)</span> ＋ <span class="px-2.5 py-0.5 rounded-xl bg-amber-300 text-slate-950">(195 ＋ 105)</span>`;
+          s1.classList.remove('opacity-0', 'scale-90');
+          s1.classList.add('pop-bounce');
+        }, 1650);
+
+        // 第 3 拍：融合成整百並得出 500
+        later(() => {
+          s2.innerHTML = `＝ 200 ＋ 300 ＝ 500`;
+          s2.classList.remove('opacity-0', 'scale-90');
+          s2.classList.add('pop-bounce');
+        }, 2750);
+      } else {
+        // 500 - 175 - 125 - 130
+        // 第 1 拍：-175 與 -125 亮金光，其餘變淡
+        t0.style.opacity = '0.4';
+        t3.style.opacity = '0.4';
+        t1.classList.add('actor-spotlight');
+        t2.classList.add('actor-spotlight');
+
+        // 第 2 拍：兩個紅色減號方塊靠攏並轉化為 － (175 ＋ 125)
+        later(() => {
+          t1.classList.remove('actor-spotlight');
+          t2.classList.remove('actor-spotlight');
+          t1.style.transform = 'translateX(12px) scale(1.06)';
+          t2.style.transform = 'translateX(-12px) scale(1.06)';
+          s1.innerHTML = `＝ 500 － <span class="px-3 py-0.5 rounded-xl bg-amber-400 text-slate-950">(175 ＋ 125)</span> － 130 ＝ 500 － <span class="text-amber-700">300</span> － 130`;
+          s1.classList.remove('opacity-0', 'scale-90');
+          s1.classList.add('pop-bounce');
+        }, 1050);
+
+        // 第 3 拍：恢復亮度並得出 70
+        later(() => {
+          t0.style.opacity = '1';
+          t3.style.opacity = '1';
+          s2.innerHTML = `＝ 200 － 130 ＝ 70`;
+          s2.classList.remove('opacity-0', 'scale-90');
+          s2.classList.add('pop-bounce');
+        }, 2350);
+      }
+    }
+
+    // =========================================================================
+    // 8-2 活動 2：雙主角蘋果思考透視鏡
+    // =========================================================================
+    let s82_2_who = null;
+
+    function appleSVG() {
+      return `
+        <svg class="w-10 h-10 sm:w-12 sm:h-12 mx-auto" viewBox="0 0 40 40" fill="none">
+          <path d="M20 9 C20 5 24 3 27 4" stroke="#78350f" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M20 8 C16 4 11 5 12 9 C14 11 18 10 20 8 Z" fill="#10b981"/>
+          <path d="M20 11 C13 10 7 15 8 24 C9 32 15 36 20 34 C25 36 31 32 32 24 C33 15 27 10 20 11 Z" fill="#ef4444" stroke="#b91c1c" stroke-width="1.8"/>
+          <ellipse cx="14" cy="18" rx="2" ry="4" transform="rotate(-20 14 18)" fill="#fca5a5" opacity="0.75"/>
+        </svg>
+      `;
+    }
+
+    function build8_2_Act2(container) {
+      s82_2_who = null;
+      replayFn = () => {
+        const who = s82_2_who || 'doudou';
+        build8_2_Act2(container);
+        later(() => runApplePerspective(who), 200);
+      };
+
+      let bagsHTML = '';
+      for (let b = 0; b < 3; b++) {
+        bagsHTML += `
+          <div id="ap-bag-${b}" class="rounded-3xl p-4 border-3 border-amber-300 bg-amber-50/80 flex flex-col items-center justify-between smooth-actor relative">
+            <div id="ap-bag-top-${b}" class="px-3.5 py-1 rounded-full bg-amber-500 text-white font-black text-sm sm:text-base shadow-sm smooth-actor">
+              第 ${b + 1} 袋：150 元
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 my-4 w-full relative">
+              ${[0, 1, 2].map(a => `
+                <div id="ap-cell-${b}-${a}" class="flex flex-col items-center p-1.5 rounded-2xl border-2 border-transparent smooth-actor relative">
+                  ${appleSVG()}
+                  <span id="ap-unit-${b}-${a}" class="opacity-0 scale-50 smooth-actor mt-1 px-2 py-0.5 rounded-lg bg-sky-600 text-white font-black text-xs sm:text-sm math-font">
+                    50元
+                  </span>
+                </div>
+              `).join('')}
+            </div>
+
+            <div id="ap-bag-bot-${b}" class="text-xs sm:text-sm font-black text-amber-900">每袋 3 顆</div>
+          </div>
+        `;
+      }
+
+      container.innerHTML = `
+        <div class="space-y-5">
+          <!-- 雙主角大型切換按鈕 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button id="btn-dou" onclick="runApplePerspective('doudou')" class="p-4 rounded-2xl border-3 border-sky-400 bg-white hover:bg-sky-50 text-left transition flex items-center gap-4 shadow-sm active:scale-98">
+              <span class="text-4xl">👦</span>
+              <div>
+                <div class="font-black text-lg sm:text-xl text-sky-950">豆豆做法：先算 1 顆幾元</div>
+                <div class="text-sm font-bold text-slate-600 math-font">1000 － (150 ÷ 3) × 9</div>
+              </div>
+            </button>
+
+            <button id="btn-nini" onclick="runApplePerspective('nini')" class="p-4 rounded-2xl border-3 border-indigo-400 bg-white hover:bg-indigo-50 text-left transition flex items-center gap-4 shadow-sm active:scale-98">
+              <span class="text-4xl">👧</span>
+              <div>
+                <div class="font-black text-lg sm:text-xl text-indigo-950">妮妮做法：先算 9 顆是 3 顆的幾倍</div>
+                <div class="text-sm font-bold text-slate-600 math-font">1000 － 150 × (9 ÷ 3)</div>
+              </div>
+            </button>
+          </div>
+
+          <!-- 超寬舞台：左側 1000 元鈔票 + 右側 3 袋 9 顆蘋果 -->
+          <div class="bg-white border-2 border-sky-200 rounded-3xl p-5 sm:p-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+              <!-- 左側 1000 元鈔票區 -->
+              <div class="lg:col-span-4 bg-sky-50/80 border-2 border-sky-200 rounded-3xl p-5 flex flex-col items-center justify-center relative">
+                <div id="banknote-1000" class="w-full max-w-[270px] h-32 rounded-2xl bg-gradient-to-r from-sky-700 via-blue-700 to-sky-800 text-white p-4 shadow-lg border-3 border-sky-300 flex flex-col justify-between smooth-actor">
+                  <div class="flex justify-between items-center">
+                    <span class="text-xs font-black bg-white/20 px-2 py-0.5 rounded">付款金額</span>
+                    <span class="math-font text-2xl font-black">1000</span>
+                  </div>
+                  <div class="text-center font-black text-2xl tracking-widest text-amber-200">壹仟圓</div>
+                  <div class="text-right text-xs font-bold text-sky-200">1000 元</div>
+                </div>
+
+                <!-- 扣款與找零結果標籤 -->
+                <div id="ap-deduct-pill" class="opacity-0 scale-75 smooth-actor mt-3 px-4 py-1.5 rounded-xl bg-amber-400 text-amber-950 font-black math-font text-base sm:text-lg shadow">
+                  － 450 元
+                </div>
+                <div id="ap-change-pill" class="opacity-0 scale-75 smooth-actor mt-2 px-5 py-2 rounded-2xl bg-emerald-600 text-white font-black math-font text-lg sm:text-xl shadow-md">
+                  找回：550 元
+                </div>
+              </div>
+
+              <!-- 右側 9 顆蘋果區 -->
+              <div class="lg:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                ${bagsHTML}
+              </div>
+            </div>
+          </div>
+
+          <!-- 動態算式演進區 -->
+          <div id="ap-formula-box" class="bg-slate-900 text-white rounded-2xl p-5 math-font text-xl sm:text-3xl font-black text-center shadow-lg">
+            點擊上方「豆豆做法」或「妮妮做法」觀看解題動畫
+          </div>
+        </div>
+      `;
+    }
+
+    function runApplePerspective(who) {
+      clearTimers();
+      s82_2_who = who;
+
+      // 重置視覺狀態
+      for (let b = 0; b < 3; b++) {
+        const bag = document.getElementById(`ap-bag-${b}`);
+        const top = document.getElementById(`ap-bag-top-${b}`);
+        bag.className = 'rounded-3xl p-4 border-3 border-amber-300 bg-amber-50/80 flex flex-col items-center justify-between smooth-actor relative';
+        bag.style.opacity = '1';
+        top.className = 'px-3.5 py-1 rounded-full bg-amber-500 text-white font-black text-sm sm:text-base shadow-sm smooth-actor';
+        top.textContent = `第 ${b + 1} 袋：150 元`;
+        for (let a = 0; a < 3; a++) {
+          const cell = document.getElementById(`ap-cell-${b}-${a}`);
+          const unit = document.getElementById(`ap-unit-${b}-${a}`);
+          cell.className = 'flex flex-col items-center p-1.5 rounded-2xl border-2 border-transparent smooth-actor relative';
+          unit.className = 'opacity-0 scale-50 smooth-actor mt-1 px-2 py-0.5 rounded-lg bg-sky-600 text-white font-black text-xs sm:text-sm math-font';
+        }
+      }
+      const deduct = document.getElementById('ap-deduct-pill');
+      const change = document.getElementById('ap-change-pill');
+      const note = document.getElementById('banknote-1000');
+      deduct.className = 'opacity-0 scale-75 smooth-actor mt-3 px-4 py-1.5 rounded-xl bg-amber-400 text-amber-950 font-black math-font text-base sm:text-lg shadow';
+      change.className = 'opacity-0 scale-75 smooth-actor mt-2 px-5 py-2 rounded-2xl bg-emerald-600 text-white font-black math-font text-lg sm:text-xl shadow-md';
+      note.classList.remove('cyan-spotlight');
+
+      const formula = document.getElementById('ap-formula-box');
+
+      if (who === 'doudou') {
+        // 第 1 拍：第 1 袋放大閃爍，第 2、3 袋變淡
+        const bag0 = document.getElementById('ap-bag-0');
+        bag0.classList.add('cyan-spotlight', 'border-sky-500', 'bg-sky-50');
+        document.getElementById('ap-bag-1').style.opacity = '0.35';
+        document.getElementById('ap-bag-2').style.opacity = '0.35';
+
+        // 第 2 拍：第 1 袋 3 顆蘋果切開，150 元分裂成三個 50 元
+        later(() => {
+          bag0.classList.remove('cyan-spotlight');
+          for (let a = 0; a < 3; a++) {
+            const cell = document.getElementById(`ap-cell-0-${a}`);
+            const unit = document.getElementById(`ap-unit-0-${a}`);
+            cell.classList.add('border-dashed', 'border-sky-500', 'bg-white');
+            unit.classList.remove('opacity-0', 'scale-50');
+            unit.classList.add('pop-bounce');
+          }
+          formula.innerHTML = `1000 － <span class="px-3 py-1 rounded-xl bg-sky-500 text-slate-950 pop-bounce">(150 ÷ 3)</span> × 9`;
+        }, 850);
+
+        // 第 3 拍：全部 9 顆蘋果都跳出 50 元標籤（50 × 9 = 450）
+        later(() => {
+          document.getElementById('ap-bag-1').style.opacity = '1';
+          document.getElementById('ap-bag-2').style.opacity = '1';
+          for (let b = 1; b < 3; b++) {
+            for (let a = 0; a < 3; a++) {
+              const cell = document.getElementById(`ap-cell-${b}-${a}`);
+              const unit = document.getElementById(`ap-unit-${b}-${a}`);
+              cell.classList.add('border-dashed', 'border-sky-500', 'bg-white');
+              unit.classList.remove('opacity-0', 'scale-50');
+              unit.classList.add('pop-bounce');
+            }
+          }
+          formula.innerHTML = `1000 － <span class="text-sky-300">50 × 9</span> ＝ 1000 － <span class="text-amber-300">450</span>`;
+        }, 1850);
+
+        // 第 4 拍：450 元飛向 1000 元鈔票，亮出找回 550 元
+        later(() => {
+          note.classList.add('cyan-spotlight');
+          deduct.classList.remove('opacity-0', 'scale-75');
+          deduct.classList.add('pop-bounce');
+          later(() => {
+            note.classList.remove('cyan-spotlight');
+            change.classList.remove('opacity-0', 'scale-75');
+            change.classList.add('pop-bounce');
+            formula.innerHTML = `1000 － (150 ÷ 3) × 9 ＝ 1000 － 450 ＝ <span class="text-emerald-300">550（元）</span>`;
+          }, 650);
+        }, 2900);
+      } else {
+        // 妮妮做法：先算 9 顆是 3 顆的幾倍
+        // 第 1 拍：發光圓圈依序框住第 1、2、3 袋
+        for (let b = 0; b < 3; b++) {
+          later(() => {
+            const bag = document.getElementById(`ap-bag-${b}`);
+            const top = document.getElementById(`ap-bag-top-${b}`);
+            bag.classList.remove('border-amber-300', 'bg-amber-50/80');
+            bag.classList.add('border-indigo-500', 'bg-indigo-50', 'actor-spotlight');
+            top.className = 'px-3.5 py-1 rounded-full bg-indigo-600 text-white font-black text-sm sm:text-base shadow pop-bounce';
+            top.textContent = `第 ${b + 1} 份（150 元）`;
+            later(() => bag.classList.remove('actor-spotlight'), 650);
+          }, b * 420);
+        }
+
+        later(() => {
+          formula.innerHTML = `1000 － 150 × <span class="px-3 py-1 rounded-xl bg-indigo-400 text-slate-950 pop-bounce">(9 ÷ 3)</span>`;
+        }, 1350);
+
+        // 第 2 拍：三份 150 元合併成 450 元，飛向 1000 元鈔票
+        later(() => {
+          formula.innerHTML = `1000 － <span class="text-indigo-300">150 × 3</span> ＝ 1000 － <span class="text-amber-300">450</span>`;
+          note.classList.add('cyan-spotlight');
+          deduct.classList.remove('opacity-0', 'scale-75');
+          deduct.classList.add('pop-bounce');
+        }, 2350);
+
+        later(() => {
+          note.classList.remove('cyan-spotlight');
+          change.classList.remove('opacity-0', 'scale-75');
+          change.classList.add('pop-bounce');
+          formula.innerHTML = `1000 － 150 × (9 ÷ 3) ＝ 1000 － 450 ＝ <span class="text-emerald-300">550（元）</span>`;
+        }, 3150);
+      }
+    }
+
+    // =========================================================================
+    // 8-2 活動 3：蛋塔與布丁價目線段拆解機
+    // =========================================================================
+    function eggTartSVG() {
+      return `
+        <svg class="w-10 h-10 sm:w-12 sm:h-12 mx-auto" viewBox="0 0 40 40" fill="none">
+          <polygon points="6,18 34,18 29,33 11,33" fill="#d97706" stroke="#92400e" stroke-width="2" stroke-linejoin="round"/>
+          <ellipse cx="20" cy="18" rx="14" ry="5" fill="#fbbf24" stroke="#b45309" stroke-width="1.8"/>
+          <ellipse cx="20" cy="18" rx="10" ry="3.2" fill="#fef08a"/>
+          <circle cx="17" cy="17.5" r="1.3" fill="#b45309" opacity="0.6"/>
+          <circle cx="23" cy="18.5" r="1" fill="#b45309" opacity="0.6"/>
+        </svg>
+      `;
+    }
+
+    function puddingSVG() {
+      return `
+        <svg class="w-10 h-10 sm:w-12 sm:h-12 mx-auto" viewBox="0 0 40 40" fill="none">
+          <path d="M12 14 L28 14 L33 33 L7 33 Z" fill="#fde047" stroke="#ca8a04" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M12 14 L28 14 L29.5 19 Q25 22 20 19 Q15 22 10.5 19 Z" fill="#92400e"/>
+          <ellipse cx="20" cy="34" rx="15" ry="2.5" fill="#e2e8f0"/>
+        </svg>
+      `;
+    }
+
+    let s82_3_last = 0;
+
+    function build8_2_Act3(container) {
+      s82_3_last = 0;
+      replayFn = () => {
+        const target = s82_3_last || 3;
+        build8_2_Act3(container);
+        if (target >= 1) later(() => runBakeryStep(1), 200);
+        if (target >= 2) later(() => runBakeryStep(2), 1400);
+        if (target >= 3) later(() => runBakeryStep(3), 2600);
+      };
+
+      container.innerHTML = `
+        <div class="space-y-5">
+          <!-- 操作控制列 -->
+          <div class="flex flex-wrap items-center justify-center gap-3">
+            <button id="btn-bk-auto" onclick="playAllBakerySteps()" class="px-6 py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-amber-300 font-black text-base shadow-md transition active:scale-95">
+              ▶ 自動三步連播
+            </button>
+            <button id="btn-bk-1" onclick="runBakeryStep(1)" class="px-5 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black text-base shadow transition active:scale-95">
+              ① 算 9 個蛋塔總價
+            </button>
+            <button id="btn-bk-2" onclick="runBakeryStep(2)" disabled class="px-5 py-3 rounded-2xl bg-sky-600 hover:bg-sky-700 disabled:opacity-40 text-white font-black text-base shadow transition active:scale-95">
+              ② 扣掉蛋塔剩布丁
+            </button>
+            <button id="btn-bk-3" onclick="runBakeryStep(3)" disabled class="px-5 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white font-black text-base shadow transition active:scale-95">
+              ③ 平分 5 個布丁
+            </button>
+          </div>
+
+          <!-- 超寬商品列 + 對應價目長條圖 -->
+          <div class="bg-white border-2 border-sky-200 rounded-3xl p-5 sm:p-6 space-y-5 relative">
+            <!-- 商品陣列 -->
+            <div class="grid grid-cols-1 lg:grid-cols-14 gap-3 items-end" style="grid-template-columns: repeat(14, minmax(0, 1fr));">
+              ${Array.from({ length: 9 }).map((_, i) => `
+                <div id="tart-item-${i}" class="col-span-2 sm:col-span-1 flex flex-col items-center p-1.5 rounded-2xl border-2 border-transparent smooth-actor">
+                  ${eggTartSVG()}
+                  <span id="tart-tag-${i}" class="opacity-0 scale-50 smooth-actor mt-1 px-1.5 py-0.5 rounded bg-amber-500 text-white font-black text-xs math-font">35元</span>
+                </div>
+              `).join('')}
+
+              ${Array.from({ length: 5 }).map((_, i) => `
+                <div id="pud-item-${i}" class="col-span-2 sm:col-span-1 flex flex-col items-center p-1.5 rounded-2xl border-2 border-transparent smooth-actor">
+                  ${puddingSVG()}
+                  <span id="pud-tag-${i}" class="opacity-0 scale-50 smooth-actor mt-1 px-2 py-0.5 rounded bg-emerald-600 text-white font-black text-xs sm:text-sm math-font">20元</span>
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- 415 元比例線段長條圖 -->
+            <div class="space-y-1.5">
+              <div class="flex justify-between text-sm sm:text-base font-black text-slate-700 math-font">
+                <span>總花費：415 元</span>
+                <span>9 個蛋塔 ＋ 5 個布丁</span>
+              </div>
+              <div class="w-full h-24 rounded-2xl overflow-hidden border-3 border-slate-300 flex bg-slate-100 relative">
+                <!-- 蛋塔區 (315/415 = 75.9%) -->
+                <div id="seg-tarts" style="width: 75.9%;" class="h-full bg-slate-200 border-r-3 border-dashed border-slate-400 flex flex-col items-center justify-center p-2 smooth-actor">
+                  <span class="font-black text-slate-800 text-base sm:text-xl">9 個蛋塔</span>
+                  <span id="seg-tarts-val" class="opacity-0 smooth-actor math-font text-base sm:text-xl font-black text-amber-950">35 × 9 ＝ 315 元</span>
+                </div>
+
+                <!-- 剪刀切線光標 -->
+                <div id="seg-scissor" style="left: 75.9%;" class="-ml-4 opacity-0 smooth-actor absolute top-1/2 -translate-y-1/2 z-20 bg-white rounded-full p-1.5 border-2 border-amber-500 shadow-md text-xl">
+                  ✂️
+                </div>
+
+                <!-- 布丁區 (100/415 = 24.1%) -->
+                <div id="seg-puddings" style="width: 24.1%;" class="h-full bg-slate-100 flex flex-col items-center justify-center p-2 smooth-actor">
+                  <span class="font-black text-slate-700 text-sm sm:text-lg">5 個布丁</span>
+                  <span id="seg-puddings-val" class="opacity-0 smooth-actor math-font text-base sm:text-xl font-black text-emerald-950">415 － 315 ＝ 100 元</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 動態四則併式列 -->
+          <div id="bk-formula-bar" class="bg-slate-900 text-white rounded-2xl p-5 math-font text-xl sm:text-3xl font-black text-center shadow-lg">
+            415 元 ＝ 9 個蛋塔 ＋ 5 個布丁
+          </div>
+        </div>
+      `;
+    }
+
+    function playAllBakerySteps() {
+      document.getElementById('btn-bk-auto').disabled = true;
+      runBakeryStep(1);
+      later(() => runBakeryStep(2), 1450);
+      later(() => runBakeryStep(3), 2750);
+    }
+
+    function runBakeryStep(step) {
+      s82_3_last = step;
+      const formula = document.getElementById('bk-formula-bar');
+
+      if (step === 1) {
+        document.getElementById('btn-bk-1').disabled = true;
+        document.getElementById('btn-bk-2').disabled = false;
+
+        for (let i = 0; i < 9; i++) {
+          later(() => {
+            const item = document.getElementById(`tart-item-${i}`);
+            const tag = document.getElementById(`tart-tag-${i}`);
+            if (item && tag) {
+              item.classList.add('bg-amber-50', 'border-amber-400');
+              tag.classList.remove('opacity-0', 'scale-50');
+              tag.classList.add('pop-bounce');
+            }
+          }, i * 75);
+        }
+
+        later(() => {
+          const segT = document.getElementById('seg-tarts');
+          const segTV = document.getElementById('seg-tarts-val');
+          segT.className = 'h-full bg-amber-300 border-r-3 border-dashed border-amber-600 flex flex-col items-center justify-center p-2 smooth-actor';
+          segTV.classList.remove('opacity-0');
+          formula.innerHTML = `蛋塔總價：<span class="text-amber-300 pop-bounce">35 × 9 ＝ 315（元）</span>`;
+        }, 700);
+      }
+
+      if (step === 2) {
+        document.getElementById('btn-bk-2').disabled = true;
+        document.getElementById('btn-bk-3').disabled = false;
+
+        const scissor = document.getElementById('seg-scissor');
+        const segT = document.getElementById('seg-tarts');
+        const segP = document.getElementById('seg-puddings');
+        const segPV = document.getElementById('seg-puddings-val');
+
+        scissor.classList.remove('opacity-0');
+        later(() => {
+          segT.style.opacity = '0.28';
+          segT.style.transform = 'translateX(-14px)';
+          segP.className = 'h-full bg-emerald-300 flex flex-col items-center justify-center p-2 smooth-actor scale-[1.03]';
+          segPV.classList.remove('opacity-0');
+          formula.innerHTML = `剩下布丁總價：<span class="px-3 py-1 rounded-xl bg-amber-400 text-slate-950">(415 － 35 × 9)</span> ＝ <span class="text-emerald-300">100（元）</span>`;
+        }, 450);
+      }
+
+      if (step === 3) {
+        document.getElementById('btn-bk-3').disabled = true;
+
+        for (let i = 0; i < 5; i++) {
+          later(() => {
+            const pItem = document.getElementById(`pud-item-${i}`);
+            const pTag = document.getElementById(`pud-tag-${i}`);
+            if (pItem && pTag) {
+              pItem.classList.add('bg-emerald-50', 'border-emerald-500', 'actor-spotlight');
+              pTag.classList.remove('opacity-0', 'scale-50');
+              pTag.classList.add('pop-bounce');
+              later(() => pItem.classList.remove('actor-spotlight'), 900);
+            }
+          }, i * 140);
+        }
+
+        later(() => {
+          formula.innerHTML = `<span class="text-amber-300">(415 － 35 × 9)</span> ÷ 5 ＝ 100 ÷ 5 ＝ <span class="text-emerald-300">20（元）</span>`;
+        }, 800);
+      }
+    }
+
+    // =========================================================================
+    // 8-2 活動 4：💡 8-2 重點原理總結看板
+    // =========================================================================
+    function build8_2_Summary(container) {
+      container.innerHTML = `
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="rounded-3xl bg-sky-50 border-3 border-sky-300 p-6 flex flex-col justify-between shadow-sm">
+            <div>
+              <span class="px-3.5 py-1 rounded-full bg-sky-600 text-white text-sm font-black">原理 ①</span>
+              <h3 class="text-2xl font-black text-sky-950 mt-3">搬家要「帶符號」一起走</h3>
+              <p class="text-base font-bold text-slate-700 mt-3 leading-relaxed">
+                在只有加減或只有乘除的算式中，數字調整位置湊整百時，<strong>必須連同前面的運算符號</strong>一起移動！
+              </p>
+            </div>
+            <div class="mt-5 p-4 rounded-2xl bg-white border-2 border-sky-200 math-font text-lg sm:text-xl font-black text-center text-sky-950">
+              120 ＋ 195 ＋ 80 ＝ 120 <span class="text-sky-600">＋ 80</span> ＋ 195
+            </div>
+          </div>
+
+          <div class="rounded-3xl bg-amber-50 border-3 border-amber-300 p-6 flex flex-col justify-between shadow-sm">
+            <div>
+              <span class="px-3.5 py-1 rounded-full bg-amber-500 text-white text-sm font-black">原理 ②</span>
+              <h3 class="text-2xl font-black text-amber-950 mt-3">連減兩數 ＝ 減去兩數之和</h3>
+              <p class="text-base font-bold text-slate-700 mt-3 leading-relaxed">
+                連續減掉兩個數，等於把兩個減數<strong>加起來</strong>一起減，括號裡面要變成<strong>加號 ＋</strong>！
+              </p>
+            </div>
+            <div class="mt-5 p-4 rounded-2xl bg-white border-2 border-amber-200 math-font text-lg sm:text-xl font-black text-center text-amber-950">
+              a － b － c ＝ a － (b <span class="text-emerald-600">＋</span> c)
+            </div>
+          </div>
+
+          <div class="rounded-3xl bg-indigo-50 border-3 border-indigo-300 p-6 flex flex-col justify-between shadow-sm">
+            <div>
+              <span class="px-3.5 py-1 rounded-full bg-indigo-600 text-white text-sm font-black">解題秘訣 ③</span>
+              <h3 class="text-2xl font-black text-indigo-950 mt-3">多步驟併式與括號使用</h3>
+              <p class="text-base font-bold text-slate-700 mt-3 leading-relaxed">
+                可從「單價」或「倍數」不同視角切入；把多步驟合併成一個算式時，若<strong>加減要先算，記得加上括號 ( )</strong>！
+              </p>
+            </div>
+            <div class="mt-5 p-4 rounded-2xl bg-white border-2 border-indigo-200 math-font text-lg sm:text-xl font-black text-center text-indigo-950">
+              (415 － 35 × 9) ÷ 5 ＝ 20
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // 8-3 活動 1：露營區與烤肉區土地拼貼台（加法分配律 22 × 16 + 8 × 16）
+    // =========================================================================
+    let s83_1_pct = 0;
+
+    function tentSVG() {
+      return `
+        <svg class="w-12 h-10 sm:w-14 sm:h-12" viewBox="0 0 48 40" fill="none">
+          <polygon points="24,6 6,34 42,34" fill="#fef08a" stroke="#065f46" stroke-width="2.2" stroke-linejoin="round"/>
+          <polygon points="24,6 17,34 31,34" fill="#059669"/>
+        </svg>
+      `;
+    }
+
+    function grillSVG() {
+      return `
+        <svg class="w-12 h-10 sm:w-14 sm:h-12" viewBox="0 0 48 40" fill="none">
+          <path d="M12 18 H36 C36 26 30 29 24 29 C18 29 12 26 12 18 Z" fill="#1e293b"/>
+          <line x1="16" y1="28" x2="13" y2="36" stroke="#1e293b" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="32" y1="28" x2="35" y2="36" stroke="#1e293b" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M18 13 Q16 9 19 6 M24 13 Q22 9 25 6 M30 13 Q28 9 31 6" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      `;
+    }
+
+    function build8_3_Act1(container) {
+      s83_1_pct = 0;
+      replayFn = () => {
+        build8_3_Act1(container);
+        later(() => playLandMergeAnimation(), 250);
+      };
+
+      container.innerHTML = `
+        <div class="space-y-5">
+          <!-- 拖曳滑桿 + 自動合體動畫按鈕 -->
+          <div class="bg-sky-50 border-2 border-sky-200 rounded-2xl p-4 flex flex-col lg:flex-row items-center gap-4">
+            <div class="flex items-center gap-3 w-full lg:flex-1">
+              <span class="text-sm sm:text-base font-black text-sky-900 whitespace-nowrap">分開算 (0%)</span>
+              <input id="land-range" type="range" min="0" max="100" value="0" oninput="setLandMergeProgress(this.value)" class="land-slider w-full" />
+              <span class="text-sm sm:text-base font-black text-emerald-800 whitespace-nowrap">合體算 (100%)</span>
+            </div>
+            <button id="btn-land-auto" onclick="playLandMergeAnimation()" class="w-full lg:w-auto px-7 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black text-base sm:text-lg shadow-md transition active:scale-95 shrink-0">
+              ▶ 播放土地滑動合體動畫
+            </button>
+          </div>
+
+          <!-- 超寬建築藍圖拼接舞台 -->
+          <div class="bg-white border-2 border-sky-200 rounded-3xl p-6 min-h-[300px] flex flex-col items-center justify-center relative overflow-hidden"
+               style="background-image: radial-gradient(#bae6fd 1.5px, transparent 1.5px); background-size: 24px 24px;">
+
+            <!-- 頂部合併總長標尺 -->
+            <div id="land-top-ruler" class="opacity-0 scale-90 smooth-actor mb-3 px-6 py-1.5 rounded-full bg-amber-400 border-3 border-amber-600 text-amber-950 font-black math-font text-lg sm:text-2xl shadow-md">
+              合併總長 ＝ (22 ＋ 8) ＝ 30 m
+            </div>
+
+            <div class="flex items-center justify-center w-full relative">
+              <!-- 左側 16m 等高標尺 -->
+              <div id="land-h-left" class="mr-3 px-3 py-2 rounded-2xl bg-sky-100 border-2 border-sky-400 text-sky-950 font-black math-font text-base sm:text-xl flex flex-col items-center smooth-actor">
+                <span>寬</span>
+                <span class="text-xl sm:text-2xl">16m</span>
+              </div>
+
+              <!-- 水平對齊雷射線 -->
+              <div id="land-align-top" class="opacity-0 smooth-actor absolute top-0 left-1/4 right-1/4 h-1 bg-sky-400 shadow-[0_0_12px_#38bdf8] pointer-events-none"></div>
+              <div id="land-align-bot" class="opacity-0 smooth-actor absolute bottom-0 left-1/4 right-1/4 h-1 bg-sky-400 shadow-[0_0_12px_#38bdf8] pointer-events-none"></div>
+
+              <!-- 兩塊土地容器 -->
+              <div id="land-pair-box" class="flex items-stretch" style="gap: 84px;">
+                <!-- 露營區 22m × 16m -->
+                <div id="land-camp" class="w-56 sm:w-80 h-44 sm:h-52 bg-emerald-500 border-4 border-emerald-700 rounded-3xl flex flex-col items-center justify-center text-white shadow-lg relative">
+                  <div class="flex gap-2 mb-1">${tentSVG()}${tentSVG()}</div>
+                  <span class="text-xl sm:text-2xl font-black">露營區</span>
+                  <span class="math-font text-base sm:text-lg font-black bg-emerald-800/50 px-3 py-0.5 rounded-full mt-1">長 22m × 寬 16m</span>
+                </div>
+
+                <!-- 接縫金色火花 -->
+                <div id="land-seam-spark" class="opacity-0 scale-50 smooth-actor self-center -mx-4 z-30 text-3xl pointer-events-none">✨</div>
+
+                <!-- 烤肉區 8m × 16m -->
+                <div id="land-bbq" class="w-32 sm:w-44 h-44 sm:h-52 bg-amber-400 border-4 border-amber-600 rounded-3xl flex flex-col items-center justify-center text-amber-950 shadow-lg relative">
+                  <div class="mb-1">${grillSVG()}</div>
+                  <span class="text-lg sm:text-2xl font-black">烤肉區</span>
+                  <span class="math-font text-sm sm:text-base font-black bg-white/75 px-2.5 py-0.5 rounded-full mt-1">長 8m × 寬 16m</span>
+                </div>
+              </div>
+
+              <!-- 右側 16m 等高標尺 -->
+              <div id="land-h-right" class="ml-3 px-3 py-2 rounded-2xl bg-sky-100 border-2 border-sky-400 text-sky-950 font-black math-font text-base sm:text-xl flex flex-col items-center smooth-actor">
+                <span>寬</span>
+                <span class="text-xl sm:text-2xl">16m</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 動態變形算式列 -->
+          <div id="land-formula-bar" class="bg-slate-900 text-white rounded-2xl p-5 math-font text-xl sm:text-3xl font-black text-center shadow-lg">
+            <span class="text-amber-300 underline decoration-4">22 × 16 ＋ 8 × 16</span>
+            <span class="mx-3 text-slate-400">＝</span>
+            <span class="text-slate-400">(22 ＋ 8) × 16 ＝ 480（平方公尺）</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function setLandMergeProgress(val) {
+      s83_1_pct = Number(val);
+      const slider = document.getElementById('land-range');
+      if (slider) slider.value = s83_1_pct;
+
+      const pair = document.getElementById('land-pair-box');
+      const topRuler = document.getElementById('land-top-ruler');
+      const camp = document.getElementById('land-camp');
+      const bbq = document.getElementById('land-bbq');
+      const spark = document.getElementById('land-seam-spark');
+      const formula = document.getElementById('land-formula-bar');
+
+      if (!pair) return;
+      const ratio = s83_1_pct / 100;
+      pair.style.gap = `${Math.round(84 * (1 - ratio))}px`;
+
+      if (s83_1_pct >= 96) {
+        topRuler.classList.remove('opacity-0', 'scale-90');
+        camp.classList.remove('rounded-3xl');
+        camp.classList.add('rounded-l-3xl');
+        bbq.classList.remove('rounded-3xl');
+        bbq.classList.add('rounded-r-3xl');
+        spark.classList.remove('opacity-0', 'scale-50');
+        formula.innerHTML = `
+          <span class="text-slate-400">22 × 16 ＋ 8 × 16</span>
+          <span class="mx-3 text-amber-300">＝</span>
+          <span class="text-emerald-300 underline decoration-4">(22 ＋ 8) × 16 ＝ 30 × 16 ＝ 480（平方公尺）</span>
+        `;
+      } else {
+        topRuler.classList.add('opacity-0', 'scale-90');
+        camp.classList.add('rounded-3xl');
+        camp.classList.remove('rounded-l-3xl');
+        bbq.classList.add('rounded-3xl');
+        bbq.classList.remove('rounded-r-3xl');
+        spark.classList.add('opacity-0', 'scale-50');
+        formula.innerHTML = `
+          <span class="text-amber-300 underline decoration-4">22 × 16 ＋ 8 × 16</span>
+          <span class="mx-3 text-slate-400">＝</span>
+          <span class="text-slate-400">(22 ＋ 8) × 16 ＝ 480（平方公尺）</span>
+        `;
+      }
+    }
+
+    function playLandMergeAnimation() {
+      const hL = document.getElementById('land-h-left');
+      const hR = document.getElementById('land-h-right');
+      const lineT = document.getElementById('land-align-top');
+      const lineB = document.getElementById('land-align-bot');
+
+      // 第 1 拍：兩側 16m 標尺閃爍青藍光並射出水平對齊線
+      if (hL && hR) {
+        hL.classList.add('cyan-spotlight');
+        hR.classList.add('cyan-spotlight');
+        lineT.classList.remove('opacity-0');
+        lineB.classList.remove('opacity-0');
+      }
+
+      // 第 2 拍：平滑滑動合體（或若已合體則拆開）
+      const target = s83_1_pct < 50 ? 100 : 0;
+      const step = target > s83_1_pct ? 2 : -2;
+
+      later(() => {
+        const animateStep = () => {
+          s83_1_pct += step;
+          if ((step > 0 && s83_1_pct >= target) || (step < 0 && s83_1_pct <= target)) {
+            setLandMergeProgress(target);
+            if (hL && hR) {
+              hL.classList.remove('cyan-spotlight');
+              hR.classList.remove('cyan-spotlight');
+              lineT.classList.add('opacity-0');
+              lineB.classList.add('opacity-0');
+            }
+          } else {
+            setLandMergeProgress(s83_1_pct);
+            later(animateStep, 18);
+          }
+        };
+        animateStep();
+      }, 650);
+    }
+
+    // =========================================================================
+    // 8-3 活動 2：兒童樂園剪刀裁切模擬器（減法分配律 66 × 42 - 46 × 42）
+    // =========================================================================
+    function build8_3_Act2(container) {
+      replayFn = () => {
+        build8_3_Act2(container);
+        later(() => playParkScissorAnimation(), 250);
+      };
+
+      container.innerHTML = `
+        <div class="space-y-5">
+          <div class="flex justify-center">
+            <button id="btn-park-anim" onclick="playParkScissorAnimation()" class="px-8 py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black text-lg sm:text-xl shadow-lg transition active:scale-95">
+              ✂ 啟動剪刀裁切動畫
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+            <!-- 左側樂園平面圖（66m × 42m） -->
+            <div class="lg:col-span-6 bg-white border-2 border-sky-200 rounded-3xl p-6 flex items-center justify-center relative">
+              <!-- 左側總長標尺 66m -->
+              <div class="mr-4 flex flex-col items-center justify-center h-64 border-y-3 border-l-3 border-slate-500 pl-2 pr-1 rounded-l-lg">
+                <span class="font-black math-font text-lg sm:text-xl text-slate-800">總長<br>66m</span>
+              </div>
+
+              <!-- 樂園本體 -->
+              <div class="flex flex-col items-center">
+                <div class="w-64 sm:w-80 h-64 flex flex-col relative">
+                  <!-- 上半部：遊樂設施區 (46/66 ≈ 69.7%) -->
+                  <div id="pk-top-zone" style="height: 69.7%;" class="w-full bg-lime-300 border-4 border-lime-600 rounded-t-3xl flex flex-col items-center justify-center smooth-actor z-10 shadow">
+                    <span class="font-black text-lime-950 text-xl sm:text-2xl">🎡 遊樂設施區</span>
+                    <span class="math-font font-bold text-lime-900 text-sm sm:text-base">長 46m × 寬 42m</span>
+                  </div>
+
+                  <!-- 動態剪刀沿分界線由左向右剪開 -->
+                  <div id="pk-cut-scissor" style="top: 69.7%; left: -16px;" class="-mt-5 absolute z-30 pointer-events-none smooth-actor">
+                    <span class="text-3xl bg-white rounded-full p-1.5 border-2 border-amber-500 shadow-lg">✂️</span>
+                  </div>
+
+                  <!-- 下半部：戲水區 (20/66 ≈ 30.3%) -->
+                  <div id="pk-bot-zone" style="height: 30.3%;" class="w-full bg-sky-200 border-4 border-sky-500 rounded-b-3xl flex flex-col items-center justify-center smooth-actor">
+                    <span class="font-black text-sky-950 text-lg sm:text-xl">💦 戲水區</span>
+                  </div>
+                </div>
+
+                <!-- 底部共用寬度標尺 42m -->
+                <div id="pk-width-ruler" class="mt-3 px-6 py-1.5 rounded-full bg-sky-100 border-2 border-sky-400 font-black math-font text-lg sm:text-xl text-sky-950 smooth-actor">
+                  共用寬度 ＝ 42 m
+                </div>
+              </div>
+
+              <!-- 右側分段長度標尺 -->
+              <div class="ml-4 flex flex-col justify-between h-64">
+                <div style="height: 69.7%;" class="flex items-center border-y-2 border-r-2 border-lime-600 pr-2 pl-1 rounded-r-lg">
+                  <span class="font-black math-font text-base sm:text-lg text-lime-800">46m</span>
+                </div>
+                <div id="pk-rem-ruler" style="height: 30.3%;" class="flex items-center border-b-2 border-r-2 border-sky-600 pr-2 pl-1 rounded-r-lg smooth-actor">
+                  <span id="pk-rem-text" class="font-black math-font text-base sm:text-lg text-sky-900">? m</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 右側兩種算法同步變形對照 -->
+            <div class="lg:col-span-6 space-y-4">
+              <div class="p-5 rounded-3xl bg-slate-50 border-2 border-slate-200">
+                <div class="text-sm font-black text-slate-500 mb-1">做法一：全部面積 － 遊樂設施區面積</div>
+                <div class="math-font text-2xl sm:text-3xl font-black text-slate-800">
+                  66 × 42 － 46 × 42
+                </div>
+              </div>
+
+              <div id="pk-card-2" class="p-6 rounded-3xl bg-sky-50 border-3 border-sky-300 smooth-actor">
+                <div class="text-sm font-black text-sky-700 mb-2">做法二：先算戲水區剩下的長，再乘以共用寬 42m</div>
+                <div id="pk-formula-2" class="math-font text-2xl sm:text-3xl font-black text-sky-950 leading-relaxed">
+                  ＝ (<span class="text-slate-400">66 － 46</span>) × 42
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function playParkScissorAnimation() {
+      const btn = document.getElementById('btn-park-anim');
+      if (btn) {
+        btn.disabled = true;
+        btn.classList.add('opacity-50');
+      }
+
+      const wRuler = document.getElementById('pk-width-ruler');
+      const scissor = document.getElementById('pk-cut-scissor');
+      const topZone = document.getElementById('pk-top-zone');
+      const botZone = document.getElementById('pk-bot-zone');
+      const remRuler = document.getElementById('pk-rem-ruler');
+      const remText = document.getElementById('pk-rem-text');
+      const card2 = document.getElementById('pk-card-2');
+      const f2 = document.getElementById('pk-formula-2');
+
+      // 第 1 拍：共用寬度 42m 閃爍青藍光
+      wRuler.classList.add('cyan-spotlight');
+
+      // 第 2 拍：剪刀從左向右剪開分界線
+      later(() => {
+        wRuler.classList.remove('cyan-spotlight');
+        scissor.style.left = '94%';
+      }, 750);
+
+      // 第 3 拍：遊樂設施區向上抽離半透明，右側亮出 (66 - 46) = 20m，戲水區發光
+      later(() => {
+        topZone.style.transform = 'translateY(-26px)';
+        topZone.style.opacity = '0.26';
+        topZone.classList.add('border-dashed');
+
+        botZone.className = 'w-full bg-sky-400 border-4 border-sky-700 rounded-3xl flex flex-col items-center justify-center smooth-actor shadow-xl scale-105';
+        remRuler.classList.add('bg-amber-300', 'px-2', 'rounded-xl', 'pop-bounce');
+        remText.innerHTML = `(66－46)<br>＝20m`;
+
+        card2.classList.remove('bg-sky-50', 'border-sky-300');
+        card2.classList.add('bg-amber-50', 'border-amber-400', 'shadow-lg');
+        f2.innerHTML = `
+          ＝ <span class="px-2.5 py-0.5 rounded-xl bg-amber-300 text-slate-950 pop-bounce">(66 － 46)</span> × 42<br>
+          ＝ 20 × 42 ＝ <span class="text-emerald-700">840（平方公尺）</span>
+        `;
+      }, 1700);
+    }
+
+    // =========================================================================
+    // 8-3 活動 3：X 光「隱形 × 1」與單位轉換顯微鏡
+    // =========================================================================
+    let s83_3_trap = 1;
+
+    function peachSVG() {
+      return `
+        <svg class="w-9 h-9 sm:w-11 sm:h-11 mx-auto" viewBox="0 0 36 36" fill="none">
+          <path d="M18 8 C14 4 9 6 10 10 C12 12 16 11 18 8 Z" fill="#10b981"/>
+          <path d="M18 10 C11 9 6 15 7 23 C8 30 14 33 18 32 C22 33 28 30 29 23 C30 15 25 9 18 10 Z" fill="#fb923c" stroke="#c2410c" stroke-width="1.8"/>
+          <path d="M18 11 Q15 21 18 31" stroke="#ea580c" stroke-width="1.5" fill="none"/>
+        </svg>
+      `;
+    }
+
+    function build8_3_Act3(container, trap = 1) {
+      s83_3_trap = trap;
+      clearTimers();
+
+      replayFn = () => {
+        build8_3_Act3(container, s83_3_trap);
+        later(() => playXrayMicroscope(), 250);
+      };
+
+      const isA = trap === 1;
+
+      const stageBody = isA
+        ? `
+          <div class="math-font text-3xl sm:text-6xl font-black text-slate-900 flex flex-wrap items-center justify-center gap-3 py-4">
+            <span id="xr-a-left">999 × <span id="xr-c1" class="px-2 rounded-xl smooth-actor">767</span></span>
+            <span>＋</span>
+            <span id="xr-c2" class="px-2 rounded-xl smooth-actor">767</span>
+            <span id="xr-ghost-1" class="opacity-0 scale-50 smooth-actor px-4 py-1.5 rounded-2xl bg-amber-400 border-3 border-amber-600 text-amber-950 text-2xl sm:text-4xl shadow-lg">
+              × 1
+            </span>
+          </div>
+        `
+        : `
+          <div class="flex flex-col lg:flex-row items-center justify-center gap-8 w-full">
+            <!-- 左側：進貨 81 盒 -->
+            <div class="p-5 rounded-3xl bg-emerald-50 border-3 border-emerald-400 flex flex-col items-center">
+              <span class="px-4 py-1 rounded-full bg-emerald-600 text-white font-black text-base">進貨 81 盒（每盒 12 顆）</span>
+              <div class="math-font text-3xl sm:text-4xl font-black text-emerald-950 mt-3">12 × 81</div>
+            </div>
+
+            <div class="text-4xl font-black text-slate-400">－</div>
+
+            <!-- 右側：損壞 12 顆 -> X光套上盒子變 1 盒 -->
+            <div id="xr-peach-box" class="p-4 rounded-3xl border-3 border-dashed border-slate-300 bg-slate-50 smooth-actor flex flex-col items-center">
+              <div id="xr-peach-badge" class="opacity-0 scale-75 smooth-actor mb-2 px-4 py-1 rounded-full bg-amber-500 text-white font-black text-sm sm:text-base shadow">
+                12 顆 ＝ 1 盒（12 × 1）
+              </div>
+              <div class="grid grid-cols-6 gap-1.5">
+                ${Array.from({ length: 12 }).map(() => peachSVG()).join('')}
+              </div>
+              <div id="xr-peach-label" class="mt-2 font-black text-slate-700 text-base sm:text-lg">損壞 12 顆</div>
+            </div>
+          </div>
+        `;
+
+      container.innerHTML = `
+        <div class="space-y-5">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex gap-2.5">
+              <button onclick="build8_3_Act3(document.getElementById('stage-canvas'), 1)" class="px-5 py-2.5 rounded-2xl font-black text-sm sm:text-base transition ${isA ? 'bg-sky-600 text-white shadow' : 'bg-white border-2 border-sky-200 text-slate-700'}">
+                題目 A：999 × 767 ＋ 767（算式隱形 × 1）
+              </button>
+              <button onclick="build8_3_Act3(document.getElementById('stage-canvas'), 2)" class="px-5 py-2.5 rounded-2xl font-black text-sm sm:text-base transition ${!isA ? 'bg-amber-600 text-white shadow' : 'bg-white border-2 border-amber-200 text-slate-700'}">
+                題目 B：水蜜桃進貨 81 盒、損壞 12 顆（單位轉換）
+              </button>
+            </div>
+
+            <button id="btn-xr-scan" onclick="playXrayMicroscope()" class="px-7 py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-amber-300 border-2 border-amber-400 font-black text-base sm:text-lg shadow-lg transition active:scale-95">
+              🔍 啟動 X 光掃描鏡
+            </button>
+          </div>
+
+          <!-- X 光掃描工作台 -->
+          <div class="bg-white border-2 border-amber-300 rounded-3xl p-6 sm:p-8 min-h-[300px] flex flex-col items-center justify-center relative overflow-hidden space-y-5">
+            <!-- 發光青藍色 X 光掃描光束 -->
+            <div id="xr-laser" class="hidden absolute top-0 bottom-0 w-24 bg-gradient-to-r from-transparent via-sky-400/55 to-transparent border-x-4 border-sky-400 pointer-events-none z-30 shadow-[0_0_32px_rgba(56,189,248,0.85)]"></div>
+
+            ${stageBody}
+
+            <div id="xr-out-1" class="opacity-0 scale-90 smooth-actor px-7 py-3.5 rounded-2xl bg-amber-100 border-3 border-amber-400 math-font text-2xl sm:text-3xl font-black text-slate-950 shadow"></div>
+            <div id="xr-out-2" class="opacity-0 scale-90 smooth-actor px-8 py-3.5 rounded-2xl bg-emerald-600 text-white math-font text-2xl sm:text-4xl font-black shadow-lg"></div>
+          </div>
+        </div>
+      `;
+    }
+
+    function playXrayMicroscope() {
+      const btn = document.getElementById('btn-xr-scan');
+      if (btn) {
+        btn.disabled = true;
+        btn.classList.add('opacity-50');
+      }
+
+      const laser = document.getElementById('xr-laser');
+      const out1 = document.getElementById('xr-out-1');
+      const out2 = document.getElementById('xr-out-2');
+
+      // 第 1 拍：X 光雷射掃過全場
+      laser.classList.remove('hidden');
+      laser.classList.add('xray-beam-run');
+
+      if (s83_3_trap === 1) {
+        // 第 2 拍：照出隱形的 × 1
+        later(() => {
+          const ghost = document.getElementById('xr-ghost-1');
+          if (ghost) {
+            ghost.classList.remove('opacity-0', 'scale-50');
+            ghost.classList.add('pop-bounce', 'actor-spotlight');
+          }
+        }, 900);
+
+        // 第 3 拍：兩個 767 閃爍提出公因數合併
+        later(() => {
+          const ghost = document.getElementById('xr-ghost-1');
+          const c1 = document.getElementById('xr-c1');
+          const c2 = document.getElementById('xr-c2');
+          if (ghost) ghost.classList.remove('actor-spotlight');
+          if (c1) c1.classList.add('bg-sky-200', 'text-sky-900');
+          if (c2) c2.classList.add('bg-sky-200', 'text-sky-900');
+
+          out1.innerHTML = `＝ <span class="text-sky-700">767</span> × <span class="px-2.5 py-0.5 rounded-xl bg-amber-300">(999 ＋ 1)</span>`;
+          out1.classList.remove('opacity-0', 'scale-90');
+          out1.classList.add('pop-bounce');
+        }, 2050);
+
+        later(() => {
+          out2.innerHTML = `＝ 767 × 1000 ＝ 767000`;
+          out2.classList.remove('opacity-0', 'scale-90');
+          out2.classList.add('pop-bounce');
+        }, 3050);
+      } else {
+        // 題目 B：水蜜桃 12 顆套盒轉換成 1 盒
+        later(() => {
+          const pBox = document.getElementById('xr-peach-box');
+          const pBadge = document.getElementById('xr-peach-badge');
+          const pLbl = document.getElementById('xr-peach-label');
+          if (pBox && pBadge && pLbl) {
+            pBox.className = 'p-4 rounded-3xl border-4 border-amber-500 bg-amber-50 smooth-actor flex flex-col items-center shadow-lg actor-spotlight';
+            pBadge.classList.remove('opacity-0', 'scale-75');
+            pBadge.classList.add('pop-bounce');
+            pLbl.textContent = '12 × 1（1 盒）';
+            pLbl.className = 'mt-2 font-black text-amber-900 math-font text-lg sm:text-xl';
+            later(() => pBox.classList.remove('actor-spotlight'), 950);
+          }
+        }, 950);
+
+        later(() => {
+          out1.innerHTML = `＝ 12 × 81 － 12 × 1 ＝ <span class="text-sky-700">12</span> × <span class="px-2.5 py-0.5 rounded-xl bg-amber-300">(81 － 1)</span>`;
+          out1.classList.remove('opacity-0', 'scale-90');
+          out1.classList.add('pop-bounce');
+        }, 2150);
+
+        later(() => {
+          out2.innerHTML = `＝ 12 × 80 ＝ 960（顆）`;
+          out2.classList.remove('opacity-0', 'scale-90');
+          out2.classList.add('pop-bounce');
+        }, 3150);
+      }
+    }
+
+    // =========================================================================
+    // 8-3 活動 4：💡 8-3 重點原理總結看板
+    // =========================================================================
+    function build8_3_Summary(container) {
+      container.innerHTML = `
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="rounded-3xl bg-emerald-50 border-3 border-emerald-300 p-6 flex flex-col justify-between shadow-sm">
+            <div>
+              <span class="px-3.5 py-1 rounded-full bg-emerald-600 text-white text-sm font-black">原理 ①</span>
+              <h3 class="text-2xl font-black text-emerald-950 mt-3">加法分配律（同高拼貼）</h3>
+              <p class="text-base font-bold text-slate-700 mt-3 leading-relaxed">
+                兩個乘法算式若有<strong>相同的乘數 <span class="text-emerald-700">c</span></strong>，把 <span class="text-emerald-700 font-black">c</span> 提出來，另外兩個數<strong>先相加再乘</strong>！
+              </p>
+            </div>
+            <div class="mt-5 p-4 rounded-2xl bg-white border-2 border-emerald-200 math-font text-lg sm:text-xl font-black text-center text-emerald-950">
+              a × c ＋ b × c ＝ (a ＋ b) × c
+            </div>
+          </div>
+
+          <div class="rounded-3xl bg-sky-50 border-3 border-sky-300 p-6 flex flex-col justify-between shadow-sm">
+            <div>
+              <span class="px-3.5 py-1 rounded-full bg-sky-600 text-white text-sm font-black">原理 ②</span>
+              <h3 class="text-2xl font-black text-sky-950 mt-3">減法分配律（同寬裁切）</h3>
+              <p class="text-base font-bold text-slate-700 mt-3 leading-relaxed">
+                大長方形剪掉一部分算剩下面積時，把<strong>相同的乘數 <span class="text-sky-700">c</span></strong> 提出來，另外兩個數<strong>先相減再乘</strong>！
+              </p>
+            </div>
+            <div class="mt-5 p-4 rounded-2xl bg-white border-2 border-sky-200 math-font text-lg sm:text-xl font-black text-center text-sky-950">
+              a × c － b × c ＝ (a － b) × c
+            </div>
+          </div>
+
+          <div class="rounded-3xl bg-amber-50 border-3 border-amber-300 p-6 flex flex-col justify-between shadow-sm">
+            <div>
+              <span class="px-3.5 py-1 rounded-full bg-amber-500 text-white text-sm font-black">破題秘訣 ③</span>
+              <h3 class="text-2xl font-black text-amber-950 mt-3">找出隱形「× 1」與統一單位</h3>
+              <p class="text-base font-bold text-slate-700 mt-3 leading-relaxed">
+                遇見孤單出現的相同數字（如 <span class="font-black">＋ 767</span>），要補上隱形的 <strong>「× 1」</strong>；遇見不同單位（如 12 顆＝1 盒），先轉換成相同單位再合併！
+              </p>
+            </div>
+            <div class="mt-5 p-4 rounded-2xl bg-white border-2 border-amber-200 math-font text-lg sm:text-xl font-black text-center text-amber-950">
+              a × b ＋ a ＝ a × (b ＋ 1)
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // 頁面載入啟動
+    // =========================================================================
+    window.onload = function () {
+      renderStage();
+    };
+  </script>
+</body>
+</html>
